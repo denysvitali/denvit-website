@@ -1,0 +1,18 @@
+baseURL = "https://denv.it/"
+languageCode = "en-us"
+title = "Denys Vitali"
+theme = "hello-friend-ng"
+
+[author]
+name = "Denys Vitali"
+
+[params]
+homeSubtitle = "<my name>@denv.it"
+
+[params.logo]
+logoMark = ""
+logoText = "~ $"
+
+[[params.social]]
+name = "github"
+url = "https://github.com/denysvitali"
