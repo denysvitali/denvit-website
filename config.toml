@@ -16,3 +16,20 @@ logoText = "~ $"
 [[params.social]]
 name = "github"
 url = "https://github.com/denysvitali"
+
+
+[[params.social]]
+name = "twitter"
+url = "https://twitter.com/DenysVitali"
+
+[[params.social]]
+name = "instagram"
+url = "https://instagram.com/denvit"
+
+[[params.social]]
+name = "telegram"
+url = "https://t.me/denvit"
+
+[[params.social]]
+name = "linkedin"
+url = "https://www.linkedin.com/in/denysvitali"
