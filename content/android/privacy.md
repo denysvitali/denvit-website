@@ -1,6 +1,6 @@
 ---
 title: "Privacy Policy"
-date: 2023-05-01
+date: 2024-12-31
 draft: false
 ---
 
