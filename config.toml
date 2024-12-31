@@ -33,3 +33,7 @@ url = "https://t.me/denvit"
 [[params.social]]
 name = "linkedin"
 url = "https://www.linkedin.com/in/denysvitali"
+
+[[params.page]]
+title = "Privacy Policy"
+url = "/android/privacy"
