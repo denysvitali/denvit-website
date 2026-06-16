@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ArrowUpRight,
   BriefcaseBusiness,
@@ -14,6 +14,10 @@ import "./departures.css";
 
 const CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const LOWER = "abcdefghijklmnopqrstuvwxyz";
+const DIGITS = "0123456789";
+const SPECIAL = "!@#$%&*";
 
 const primaryLink = {
   title: "Blog",
@@ -69,29 +73,52 @@ function randomChar() {
   return CHARS[Math.floor(Math.random() * CHARS.length)];
 }
 
+function randomCharFromSet(set) {
+  return set[Math.floor(Math.random() * set.length)];
+}
+
+function charSetFor(ch) {
+  if (UPPER.includes(ch)) return UPPER;
+  if (LOWER.includes(ch)) return LOWER;
+  if (DIGITS.includes(ch)) return DIGITS;
+  return SPECIAL;
+}
+
+function buildCharSets(target) {
+  return Array.from(target).map(charSetFor);
+}
+
 function useScrambleText(finalText, delay = 0) {
   const [display, setDisplay] = useState("");
-  const reduced = useRef(false);
+  const [reduced, setReduced] = useState(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  const charSetsRef = useRef(buildCharSets(finalText));
 
   useEffect(() => {
+    if (typeof window === "undefined") return undefined;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    reduced.current = mq.matches;
-    const onChange = (e) => {
-      reduced.current = e.matches;
-    };
+    setReduced(mq.matches);
+    const onChange = (e) => setReduced(e.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {
-    if (reduced.current) {
+    charSetsRef.current = buildCharSets(finalText);
+  }, [finalText]);
+
+  useEffect(() => {
+    if (reduced) {
       setDisplay(finalText);
       return;
     }
 
     let frame = 0;
-    const totalFrames = 28;
+    const totalFrames = 32;
     const hold = Math.max(0, Math.round(delay / 16));
+    const charSets = charSetsRef.current;
     let raf;
 
     const tick = () => {
@@ -106,10 +133,13 @@ function useScrambleText(finalText, delay = 0) {
         setDisplay(finalText);
         return;
       }
-      const revealed = Math.floor(progress * finalText.length);
+      // Eased progress for more physical settle feel
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const revealed = Math.floor(eased * finalText.length);
       let out = finalText.slice(0, revealed);
       for (let i = revealed; i < finalText.length; i++) {
-        out += randomChar();
+        // Use character-class-appropriate random chars
+        out += randomCharFromSet(charSets[i] || CHARS);
       }
       setDisplay(out);
       raf = requestAnimationFrame(tick);
@@ -117,7 +147,7 @@ function useScrambleText(finalText, delay = 0) {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [finalText, delay]);
+  }, [finalText, delay, reduced]);
 
   return display;
 }
