@@ -1,277 +1,603 @@
-/* ===== Git Graph theme ===== */
-
 .gitgraph-shell {
   min-height: 100vh;
-  background: #0b0f14;
-  color: #e2e8f0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  color: #1f241d;
+  background:
+    linear-gradient(rgba(31, 36, 29, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 36, 29, 0.035) 1px, transparent 1px),
+    #f7f3e7;
+  background-size: 54px 54px, 54px 54px, auto;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  letter-spacing: 0;
 }
 
-/* Topbar */
+.gitgraph-shell *,
+.gitgraph-shell *::before,
+.gitgraph-shell *::after {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
 .gitgraph-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 22px 0;
+}
+
+.gitgraph-brand,
+.gitgraph-topnav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .gitgraph-brand {
+  gap: 10px;
+  border-radius: 8px;
+  font-weight: 850;
+}
+
+.gitgraph-brand svg {
+  color: #2f6f4e;
+}
+
+.gitgraph-topnav {
+  display: flex;
+  gap: 8px;
+}
+
+.gitgraph-topnav a {
+  padding: 0 13px;
+  border: 1px solid rgba(31, 36, 29, 0.14);
+  border-radius: 8px;
+  color: rgba(31, 36, 29, 0.68);
+  background: rgba(255, 255, 255, 0.58);
+  font-weight: 650;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.gitgraph-topnav a:hover,
+.gitgraph-topnav a:focus-visible,
+.gitgraph-brand:hover,
+.gitgraph-brand:focus-visible {
+  color: #1f241d;
+  outline: none;
+}
+
+.gitgraph-topnav a:hover,
+.gitgraph-topnav a:focus-visible {
+  border-color: rgba(31, 36, 29, 0.34);
+  background: #fffdf7;
+  transform: translateY(-1px);
+}
+
+.gitgraph-brand:focus-visible,
+.gitgraph-topnav a:focus-visible,
+.gitgraph-entry-link:focus-visible {
+  box-shadow: 0 0 0 3px rgba(47, 111, 78, 0.24);
+}
+
+.gitgraph-workspace {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 34px 0 74px;
+}
+
+.gitgraph-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 26px;
+}
+
+.gitgraph-kicker {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #e2e8f0;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.2px;
+  margin: 0 0 12px;
+  color: #2f6f4e;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.94rem;
+  font-weight: 800;
 }
 
-.gitgraph-brand:hover,
-.gitgraph-brand:focus-visible {
-  color: #22d3ee;
-  outline: none;
-}
-
-.gitgraph-topbar nav {
-  display: flex;
-  gap: 18px;
-}
-
-.gitgraph-topbar nav a {
-  color: #94a3b8;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 6px;
-  padding: 4px 6px;
-  transition: color 0.2s ease;
-}
-
-.gitgraph-topbar nav a:hover,
-.gitgraph-topbar nav a:focus-visible {
-  color: #e2e8f0;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25);
-}
-
-/* Stage */
-.gitgraph-stage {
-  padding: 48px 24px 64px;
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.gitgraph-canvas {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-}
-
-/* SVG */
-.gitgraph-svg {
-  flex: 0 0 auto;
-  width: 220px;
-  height: auto;
-  overflow: visible;
-}
-
-.gitgraph-line {
-  stroke-dashoffset: var(--dash, 0);
-  transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.gitgraph-line.ready {
-  stroke-dashoffset: 0;
-}
-
-.gitgraph-node {
-  fill: #0b0f14;
-  stroke-width: 2.5;
-  transform: scale(0);
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.gitgraph-node.trunk {
-  stroke: #22d3ee;
-}
-
-.gitgraph-node.branch {
-  stroke: #a78bfa;
-}
-
-.gitgraph-node.ready {
-  transform: scale(1);
-}
-
-.gitgraph-pulse {
-  fill: none;
-  stroke: #22d3ee;
-  stroke-width: 1.5;
-  opacity: 0.6;
-  animation: gitgraphPulse 2.4s ease-in-out infinite;
-}
-
-@keyframes gitgraphPulse {
-  0% {
-    r: 10;
-    opacity: 0.6;
-  }
-  70% {
-    r: 22;
-    opacity: 0;
-  }
-  100% {
-    r: 22;
-    opacity: 0;
-  }
-}
-
-/* List */
-.gitgraph-list {
-  list-style: none;
+.gitgraph-heading h1 {
   margin: 0;
-  padding: 0;
+  color: #151912;
+  font-size: 4.2rem;
+  line-height: 0.95;
+}
+
+.gitgraph-repo-meta {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 360px;
 }
 
-.gitgraph-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 72px;
-  padding: 8px 0;
-}
-
-.gitgraph-branch-icon {
-  color: #a78bfa;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-.gitgraph-link {
+.gitgraph-repo-meta span {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  color: #e2e8f0;
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 500;
-  padding: 8px 12px;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(31, 36, 29, 0.13);
   border-radius: 8px;
-  border: 1px solid transparent;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.gitgraph-link:hover,
-.gitgraph-link:focus-visible {
-  background: rgba(148, 163, 184, 0.08);
-  border-color: rgba(148, 163, 184, 0.2);
-  outline: none;
-}
-
-.trunk-link {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #22d3ee;
-}
-
-.trunk-link:hover,
-.trunk-link:focus-visible {
-  background: rgba(34, 211, 238, 0.08);
-  border-color: rgba(34, 211, 238, 0.35);
-}
-
-.gitgraph-url {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #64748b;
-  font-size: 0.8rem;
-  font-weight: 400;
-  margin-left: 4px;
-}
-
-.trunk-link .gitgraph-url {
-  color: #0ea5e9;
-}
-
-/* Tooltip */
-.gitgraph-tooltip {
-  position: fixed;
-  pointer-events: none;
-  z-index: 1000;
-  transform: translate(-50%, -100%);
-  background: rgba(15, 23, 42, 0.95);
-  color: #e2e8f0;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 8px;
-  padding: 6px 10px;
+  color: rgba(31, 36, 29, 0.7);
+  background: rgba(255, 255, 255, 0.62);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.82rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  white-space: nowrap;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  animation: tooltipIn 0.18s ease forwards;
+  font-weight: 750;
 }
 
-@keyframes tooltipIn {
+.gitgraph-board {
+  overflow: hidden;
+  border: 1px solid rgba(31, 36, 29, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 253, 247, 0.92);
+  box-shadow: 0 30px 90px rgba(54, 48, 36, 0.14);
+}
+
+.gitgraph-board-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 46px;
+  padding: 0 17px;
+  border-bottom: 1px solid rgba(31, 36, 29, 0.12);
+  color: rgba(31, 36, 29, 0.58);
+  background: rgba(244, 237, 222, 0.78);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.83rem;
+  font-weight: 750;
+}
+
+.gitgraph-window-controls {
+  display: inline-flex;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+.gitgraph-window-controls span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b86b2c;
+}
+
+.gitgraph-window-controls span:nth-child(2) {
+  background: #b49b35;
+}
+
+.gitgraph-window-controls span:nth-child(3) {
+  background: #2f6f4e;
+}
+
+.gitgraph-board-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gitgraph-log {
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.gitgraph-entry {
+  --trunk-x: 36px;
+  --branch-x: 106px;
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  min-height: 116px;
+  isolation: isolate;
+}
+
+.gitgraph-rail {
+  position: relative;
+  min-height: 116px;
+}
+
+.gitgraph-mainline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--trunk-x);
+  width: 3px;
+  border-radius: 999px;
+  background: #2f6f4e;
+  transform-origin: top;
+  animation: gitgraph-grow-y 520ms ease both;
+  animation-delay: var(--entry-delay);
+}
+
+.gitgraph-entry:first-child .gitgraph-mainline {
+  top: 50%;
+}
+
+.gitgraph-entry:last-child .gitgraph-mainline {
+  bottom: 50%;
+}
+
+.gitgraph-junction {
+  position: absolute;
+  top: 50%;
+  left: var(--trunk-x);
+  width: 13px;
+  height: 13px;
+  border: 3px solid #fffdf7;
+  border-radius: 50%;
+  background: #2f6f4e;
+  transform: translate(-5px, -50%);
+  z-index: 2;
+}
+
+.gitgraph-branch-line {
+  position: absolute;
+  top: calc(50% - 1px);
+  left: calc(var(--trunk-x) + 5px);
+  width: calc(var(--branch-x) - var(--trunk-x) - 6px);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--entry-color);
+  transform-origin: left;
+  animation: gitgraph-grow-x 460ms ease both;
+  animation-delay: calc(var(--entry-delay) + 110ms);
+}
+
+.gitgraph-head-ring {
+  position: absolute;
+  top: 50%;
+  left: var(--trunk-x);
+  width: 52px;
+  height: 52px;
+  border: 2px solid rgba(184, 107, 44, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: gitgraph-ring 2200ms ease-in-out infinite;
+}
+
+.gitgraph-commit-dot {
+  position: absolute;
+  top: 50%;
+  left: var(--branch-x);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 3px solid #fffdf7;
+  border-radius: 50%;
+  color: #fffdf7;
+  background: var(--entry-color);
+  box-shadow:
+    0 0 0 1px rgba(31, 36, 29, 0.18),
+    0 10px 24px rgba(31, 36, 29, 0.16);
+  transform: translate(-50%, -50%) scale(0.86);
+  animation: gitgraph-pop 420ms cubic-bezier(0.2, 0.88, 0.3, 1.16) both;
+  animation-delay: calc(var(--entry-delay) + 170ms);
+}
+
+.gitgraph-entry.is-primary .gitgraph-commit-dot {
+  left: var(--trunk-x);
+  width: 42px;
+  height: 42px;
+}
+
+.gitgraph-entry-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.85fr) auto;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+  margin: 8px 18px 8px 0;
+  padding: 20px 22px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #1f241d;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.gitgraph-entry-link:hover,
+.gitgraph-entry-link:focus-visible {
+  border-color: color-mix(in srgb, var(--entry-color) 36%, rgba(31, 36, 29, 0.14));
+  background: color-mix(in srgb, var(--entry-color) 7%, #fffdf7);
+  outline: none;
+  box-shadow: 0 16px 34px rgba(54, 48, 36, 0.1);
+  transform: translateY(-1px);
+}
+
+.gitgraph-entry.is-primary .gitgraph-entry-link {
+  border-color: rgba(184, 107, 44, 0.2);
+  background: rgba(255, 248, 235, 0.82);
+}
+
+.gitgraph-entry-main,
+.gitgraph-entry-detail,
+.gitgraph-entry-meta {
+  min-width: 0;
+}
+
+.gitgraph-entry-main {
+  display: grid;
+  gap: 9px;
+}
+
+.gitgraph-entry-title,
+.gitgraph-entry-url,
+.gitgraph-entry-meta span,
+.gitgraph-branch-name {
+  display: inline-flex;
+  align-items: center;
+}
+
+.gitgraph-entry-title {
+  gap: 10px;
+  color: #151912;
+}
+
+.gitgraph-entry-title strong {
+  font-size: 1.32rem;
+  line-height: 1.15;
+}
+
+.gitgraph-entry.is-primary .gitgraph-entry-title strong {
+  font-size: 1.56rem;
+}
+
+.gitgraph-entry-title svg {
+  color: var(--entry-color);
+  flex: 0 0 auto;
+}
+
+.gitgraph-entry-url {
+  width: fit-content;
+  max-width: 100%;
+  gap: 7px;
+  color: var(--entry-color);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.gitgraph-entry-url svg {
+  flex: 0 0 auto;
+}
+
+.gitgraph-entry-detail {
+  display: grid;
+  gap: 7px;
+}
+
+.gitgraph-message {
+  color: #24291f;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.91rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.gitgraph-description {
+  color: rgba(31, 36, 29, 0.64);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.gitgraph-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.gitgraph-entry-meta span {
+  min-height: 28px;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid rgba(31, 36, 29, 0.12);
+  border-radius: 999px;
+  color: rgba(31, 36, 29, 0.66);
+  background: rgba(255, 255, 255, 0.72);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.gitgraph-entry-meta .gitgraph-tag {
+  color: color-mix(in srgb, var(--entry-color) 78%, #1f241d);
+  border-color: color-mix(in srgb, var(--entry-color) 28%, rgba(31, 36, 29, 0.12));
+  background: color-mix(in srgb, var(--entry-color) 9%, #fffdf7);
+}
+
+@keyframes gitgraph-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes gitgraph-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes gitgraph-pop {
   from {
     opacity: 0;
-    transform: translate(-50%, -90%);
+    transform: translate(-50%, -50%) scale(0.65);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -100%);
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .gitgraph-line,
-  .gitgraph-node,
-  .gitgraph-pulse {
-    transition: none !important;
-    animation: none !important;
+@keyframes gitgraph-ring {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(0.92);
   }
-
-  .gitgraph-line {
-    stroke-dashoffset: 0 !important;
-  }
-
-  .gitgraph-node {
-    transform: scale(1) !important;
-  }
-
-  .gitgraph-pulse {
-    opacity: 0;
-  }
-
-  .gitgraph-tooltip {
-    animation: none;
-    opacity: 1;
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.06);
   }
 }
 
-/* Responsive */
-@media (max-width: 560px) {
-  .gitgraph-canvas {
-    flex-direction: column;
+@media (max-width: 960px) {
+  .gitgraph-heading {
     align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
   }
 
-  .gitgraph-svg {
-    width: 180px;
+  .gitgraph-repo-meta {
+    justify-content: flex-start;
+    max-width: none;
   }
 
-  .gitgraph-stage {
-    padding: 28px 16px 48px;
+  .gitgraph-entry-link {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+  }
+
+  .gitgraph-entry-meta {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .gitgraph-topbar,
+  .gitgraph-workspace {
+    width: min(calc(100% - 28px), 1180px);
+  }
+
+  .gitgraph-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 0;
+  }
+
+  .gitgraph-topnav {
+    width: 100%;
+  }
+
+  .gitgraph-topnav a {
+    justify-content: center;
+    flex: 1 1 0;
+  }
+
+  .gitgraph-workspace {
+    padding: 20px 0 44px;
+  }
+
+  .gitgraph-heading {
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .gitgraph-heading h1 {
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  .gitgraph-repo-meta span {
+    min-height: 32px;
+    font-size: 0.76rem;
+  }
+
+  .gitgraph-board-head {
+    min-height: 42px;
+    padding: 0 13px;
+  }
+
+  .gitgraph-entry {
+    --trunk-x: 20px;
+    --branch-x: 44px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    min-height: 136px;
+  }
+
+  .gitgraph-rail {
+    min-height: 136px;
+  }
+
+  .gitgraph-junction {
+    width: 11px;
+    height: 11px;
+  }
+
+  .gitgraph-branch-line {
+    width: calc(var(--branch-x) - var(--trunk-x) - 4px);
+  }
+
+  .gitgraph-head-ring {
+    width: 46px;
+    height: 46px;
+  }
+
+  .gitgraph-commit-dot {
+    width: 30px;
+    height: 30px;
+    border-width: 2px;
+  }
+
+  .gitgraph-entry.is-primary .gitgraph-commit-dot {
+    width: 38px;
+    height: 38px;
+  }
+
+  .gitgraph-entry-link {
+    margin: 7px 10px 7px 0;
+    padding: 16px;
+  }
+
+  .gitgraph-entry-title strong {
+    font-size: 1.16rem;
+  }
+
+  .gitgraph-entry.is-primary .gitgraph-entry-title strong {
+    font-size: 1.3rem;
+  }
+
+  .gitgraph-message,
+  .gitgraph-description {
+    font-size: 0.86rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gitgraph-shell *,
+  .gitgraph-shell *::before,
+  .gitgraph-shell *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }

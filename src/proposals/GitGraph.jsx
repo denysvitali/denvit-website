@@ -1,4 +1,3 @@
-import { useEffect, useId, useRef, useState } from "react";
 import {
   ArrowUpRight,
   BriefcaseBusiness,
@@ -16,7 +15,15 @@ const primaryLink = {
   title: "Blog",
   href: "https://blog.denv.it",
   label: "blog.denv.it",
-  commit: "feat: add Japan trip report",
+  icon: GitCommit,
+  branch: "main",
+  tag: "HEAD",
+  hash: "b10g4f",
+  commit: "feat(blog): publish field notes",
+  description:
+    "Long-form notes on systems, security, infrastructure, and useful automation.",
+  color: "#b86b2c",
+  primary: true,
 };
 
 const socialLinks = [
@@ -25,259 +32,177 @@ const socialLinks = [
     href: "https://github.com/denysvitali",
     label: "github.com/denysvitali",
     icon: Code2,
-    commit: "chore: push latest side project",
+    branch: "links/github",
+    tag: "remote",
+    hash: "8c41d2",
+    commit: "chore(github): push side projects",
+    description: "Code, experiments, and public repositories.",
+    color: "#2f6f4e",
   },
   {
     title: "LinkedIn",
     href: "https://www.linkedin.com/in/denysvitali",
     label: "linkedin.com/in/denysvitali",
     icon: BriefcaseBusiness,
-    commit: "chore: update LinkedIn",
+    branch: "links/linkedin",
+    tag: "work",
+    hash: "4d9a71",
+    commit: "docs(work): update professional profile",
+    description: "Professional profile and work history.",
+    color: "#386fa4",
   },
   {
     title: "Telegram",
     href: "https://t.me/denvit",
     label: "t.me/denvit",
     icon: Send,
-    commit: "fix: reply to DMs faster",
+    branch: "links/telegram",
+    tag: "chat",
+    hash: "f23a9e",
+    commit: "fix(chat): keep direct contact reachable",
+    description: "Fastest route for direct messages.",
+    color: "#2f7c86",
   },
   {
     title: "Instagram",
     href: "https://instagram.com/denvit",
     label: "instagram.com/denvit",
     icon: Camera,
-    commit: "feat: post film scans",
+    branch: "links/instagram",
+    tag: "photo",
+    hash: "7bb520",
+    commit: "feat(photo): publish visual notes",
+    description: "Photos, trips, and occasional snapshots.",
+    color: "#9a4f7a",
   },
   {
     title: "Twitter",
     href: "https://twitter.com/DenysVitali",
     label: "twitter.com/DenysVitali",
     icon: MessageCircle,
-    commit: "refactor: hot take on Go generics",
+    branch: "links/twitter",
+    tag: "social",
+    hash: "2e6d90",
+    commit: "refactor(feed): keep short-form updates tidy",
+    description: "Short updates and technical notes.",
+    color: "#8f5f2a",
   },
 ];
 
-const BRANCH_COLOR = "#a78bfa";
-const TRUNK_COLOR = "#22d3ee";
-const NODE_R = 6;
-const TRUNK_NODE_R = 10;
-const GAP_Y = 72;
-const TRUNK_X = 48;
-const BRANCH_X = 160;
-const MERGE_X = 96;
+const graphLinks = [primaryLink, ...socialLinks];
 
 export default function GitGraph() {
-  const [ready, setReady] = useState(false);
-  const [tooltip, setTooltip] = useState(null);
-  const tooltipId = useId();
-  const svgRef = useRef(null);
-
-  useEffect(() => {
-    const t = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(t);
-  }, []);
-
-  const totalHeight = (socialLinks.length + 1) * GAP_Y + 48;
-
-  const handleNodeEnter = (e, commit) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setTooltip({
-      text: commit,
-      x: rect.left + rect.width / 2,
-      y: rect.top - 8,
-    });
-  };
-
-  const handleNodeLeave = () => setTooltip(null);
-
-  const trunkNodes = [
-    { y: 24, r: TRUNK_NODE_R, commit: primaryLink.commit, href: primaryLink.href, label: primaryLink.title, isTrunk: true },
-    ...socialLinks.map((link, i) => ({
-      y: 24 + (i + 1) * GAP_Y,
-      r: NODE_R,
-      commit: link.commit,
-      href: null,
-      label: null,
-      isTrunk: true,
-    })),
-  ];
-
-  const branchNodes = socialLinks.map((link, i) => ({
-    y: 24 + (i + 1) * GAP_Y,
-    r: NODE_R,
-    commit: link.commit,
-    href: link.href,
-    label: link.title,
-    icon: link.icon,
-    isTrunk: false,
-  }));
-
-  const lines = [];
-
-  // Trunk vertical line
-  lines.push({
-    key: "trunk",
-    d: `M ${TRUNK_X} 24 L ${TRUNK_X} ${totalHeight - 24}`,
-    color: TRUNK_COLOR,
-    dash: `${totalHeight}`,
-  });
-
-  // Branch lines + merge connectors
-  socialLinks.forEach((_, i) => {
-    const y = 24 + (i + 1) * GAP_Y;
-    // Branch horizontal to merge point
-    lines.push({
-      key: `branch-h-${i}`,
-      d: `M ${BRANCH_X} ${y} L ${MERGE_X} ${y}`,
-      color: BRANCH_COLOR,
-      dash: `${BRANCH_X - MERGE_X}`,
-    });
-    // Merge curve into trunk
-    lines.push({
-      key: `merge-${i}`,
-      d: `M ${MERGE_X} ${y} Q ${TRUNK_X} ${y} ${TRUNK_X} ${y - GAP_Y / 2}`,
-      color: BRANCH_COLOR,
-      dash: `${MERGE_X - TRUNK_X + GAP_Y / 2}`,
-    });
-  });
-
   return (
     <main className="gitgraph-shell">
       <header className="gitgraph-topbar">
         <a className="gitgraph-brand" href="/" aria-label="Back to home">
-          <Terminal size={18} aria-hidden="true" />
+          <Terminal size={19} aria-hidden="true" />
           <span>denv.it</span>
         </a>
-        <nav aria-label="Primary">
+        <nav className="gitgraph-topnav" aria-label="Primary">
           <a href="/about">About</a>
           <a href="/android/privacy">Privacy</a>
         </nav>
       </header>
 
-      <section className="gitgraph-stage" aria-label="Git graph links">
-        <div className="gitgraph-canvas">
-          <svg
-            ref={svgRef}
-            viewBox={`0 0 ${BRANCH_X + 48} ${totalHeight}`}
-            className="gitgraph-svg"
-            aria-hidden="true"
-          >
-            {lines.map((line) => (
-              <path
-                key={line.key}
-                d={line.d}
-                fill="none"
-                stroke={line.color}
-                strokeWidth={2}
-                strokeLinecap="round"
-                className={ready ? "gitgraph-line ready" : "gitgraph-line"}
-                style={{
-                  strokeDasharray: line.dash,
-                  strokeDashoffset: ready ? 0 : line.dash,
-                }}
-              />
-            ))}
+      <section className="gitgraph-workspace" aria-labelledby="gitgraph-title">
+        <div className="gitgraph-heading">
+          <div>
+            <p className="gitgraph-kicker">
+              <GitBranch size={16} aria-hidden="true" />
+              <span>denv.it/link-graph</span>
+            </p>
+            <h1 id="gitgraph-title">Denys Vitali</h1>
+          </div>
 
-            {trunkNodes.map((node, i) => (
-              <g key={`t-${i}`}>
-                <circle
-                  cx={TRUNK_X}
-                  cy={node.y}
-                  r={node.r}
-                  className={
-                    ready
-                      ? "gitgraph-node trunk ready"
-                      : "gitgraph-node trunk"
-                  }
-                  style={{ transitionDelay: `${i * 80}ms` }}
-                />
-                {node.isTrunk && i === 0 && (
-                  <circle
-                    cx={TRUNK_X}
-                    cy={node.y}
-                    r={node.r + 6}
-                    className="gitgraph-pulse"
-                    aria-hidden="true"
-                  />
-                )}
-              </g>
-            ))}
-
-            {branchNodes.map((node, i) => (
-              <g key={`b-${i}`}>
-                <circle
-                  cx={BRANCH_X}
-                  cy={node.y}
-                  r={node.r}
-                  className={
-                    ready
-                      ? "gitgraph-node branch ready"
-                      : "gitgraph-node branch"
-                  }
-                  style={{ transitionDelay: `${(i + 1) * 80 + 200}ms` }}
-                />
-              </g>
-            ))}
-          </svg>
-
-          <ul className="gitgraph-list" role="list">
-            <li className="gitgraph-item trunk-item">
-              <a
-                href={primaryLink.href}
-                className="gitgraph-link trunk-link"
-                aria-label={`${primaryLink.title} — ${primaryLink.commit}`}
-                onMouseEnter={(e) => handleNodeEnter(e, primaryLink.commit)}
-                onMouseLeave={handleNodeLeave}
-                onFocus={(e) => handleNodeEnter(e, primaryLink.commit)}
-                onBlur={handleNodeLeave}
-              >
-                <GitCommit size={16} aria-hidden="true" />
-                <strong>{primaryLink.title}</strong>
-                <span className="gitgraph-url">
-                  {primaryLink.label}
-                  <ArrowUpRight size={14} aria-hidden="true" />
-                </span>
-              </a>
-            </li>
-
-            {socialLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <li key={link.href} className="gitgraph-item branch-item">
-                  <GitBranch size={14} aria-hidden="true" className="gitgraph-branch-icon" />
-                  <a
-                    href={link.href}
-                    className="gitgraph-link branch-link"
-                    aria-label={`${link.title} — ${link.commit}`}
-                    onMouseEnter={(e) => handleNodeEnter(e, link.commit)}
-                    onMouseLeave={handleNodeLeave}
-                    onFocus={(e) => handleNodeEnter(e, link.commit)}
-                    onBlur={handleNodeLeave}
-                  >
-                    <Icon size={16} aria-hidden="true" />
-                    <span>{link.title}</span>
-                    <span className="gitgraph-url">{link.label}</span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="gitgraph-repo-meta" aria-label="Repository summary">
+            <span>
+              <GitCommit size={15} aria-hidden="true" />
+              {graphLinks.length} commits
+            </span>
+            <span>HEAD -&gt; main</span>
+          </div>
         </div>
+
+        <nav className="gitgraph-board" aria-label="Denys Vitali links">
+          <div className="gitgraph-board-head" aria-hidden="true">
+            <span className="gitgraph-window-controls">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="gitgraph-board-title">git log --graph --decorate</span>
+          </div>
+
+          <ol className="gitgraph-log" role="list">
+            {graphLinks.map((link, index) => (
+              <GitGraphEntry key={link.href} link={link} index={index} />
+            ))}
+          </ol>
+        </nav>
       </section>
-
-      {tooltip && (
-        <div
-          className="gitgraph-tooltip"
-          role="tooltip"
-          id={tooltipId}
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-          }}
-        >
-          {tooltip.text}
-        </div>
-      )}
     </main>
+  );
+}
+
+function GitGraphEntry({ link, index }) {
+  const Icon = link.icon;
+  const style = {
+    "--entry-color": link.color,
+    "--entry-delay": `${index * 75}ms`,
+  };
+
+  return (
+    <li
+      className={
+        link.primary ? "gitgraph-entry is-primary" : "gitgraph-entry is-branch"
+      }
+      style={style}
+    >
+      <div className="gitgraph-rail" aria-hidden="true">
+        <span className="gitgraph-mainline" />
+        {!link.primary && (
+          <>
+            <span className="gitgraph-junction" />
+            <span className="gitgraph-branch-line" />
+          </>
+        )}
+        {link.primary && <span className="gitgraph-head-ring" />}
+        <span className="gitgraph-commit-dot">
+          <GitCommit size={link.primary ? 18 : 15} aria-hidden="true" />
+        </span>
+      </div>
+
+      <a
+        className="gitgraph-entry-link"
+        href={link.href}
+        aria-label={`${link.title}: ${link.label}. ${link.commit}. ${link.branch}, ${link.tag}.`}
+      >
+        <span className="gitgraph-entry-main">
+          <span className="gitgraph-entry-title">
+            <Icon size={18} aria-hidden="true" />
+            <strong>{link.title}</strong>
+          </span>
+          <span className="gitgraph-entry-url">
+            {link.label}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </span>
+        </span>
+
+        <span className="gitgraph-entry-detail">
+          <span className="gitgraph-message">{link.commit}</span>
+          <span className="gitgraph-description">{link.description}</span>
+        </span>
+
+        <span className="gitgraph-entry-meta" aria-hidden="true">
+          <span className="gitgraph-hash">{link.hash}</span>
+          <span className="gitgraph-branch-name">
+            <GitBranch size={13} aria-hidden="true" />
+            {link.branch}
+          </span>
+          <span className="gitgraph-tag">{link.tag}</span>
+        </span>
+      </a>
+    </li>
   );
 }

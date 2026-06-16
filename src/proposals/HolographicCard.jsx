@@ -62,7 +62,17 @@ export default function HolographicCard() {
   }, []);
 
   useEffect(() => {
-    if (prefersReduced) return;
+    const card = cardRef.current;
+
+    if (prefersReduced) {
+      if (card) {
+        card.style.transform = "";
+        card.style.removeProperty("--pointer-x");
+        card.style.removeProperty("--pointer-y");
+      }
+      return;
+    }
+
     const wrap = wrapRef.current;
     if (!wrap) return;
 
@@ -74,51 +84,73 @@ export default function HolographicCard() {
       const dy = (e.clientY - cy) / (rect.height / 2);
       const card = cardRef.current;
       if (!card) return;
-      card.style.transform = `perspective(900px) rotateX(${-dy * 10}deg) rotateY(${dx * 10}deg)`;
+      const pointerX = Math.max(0, Math.min(100, ((dx + 1) / 2) * 100));
+      const pointerY = Math.max(0, Math.min(100, ((dy + 1) / 2) * 100));
+
+      card.style.setProperty("--pointer-x", `${pointerX}%`);
+      card.style.setProperty("--pointer-y", `${pointerY}%`);
+      card.style.transform = `perspective(1100px) rotateX(${-dy * 7}deg) rotateY(${dx * 8}deg) translateZ(0)`;
     };
 
     const onLeave = () => {
       const card = cardRef.current;
-      if (card) card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)";
+      if (!card) return;
+      card.style.setProperty("--pointer-x", "50%");
+      card.style.setProperty("--pointer-y", "40%");
+      card.style.transform =
+        "perspective(1100px) rotateX(0deg) rotateY(0deg) translateZ(0)";
     };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseleave", onLeave);
+    wrap.addEventListener("pointermove", onMove);
+    wrap.addEventListener("pointerleave", onLeave);
+    wrap.addEventListener("pointercancel", onLeave);
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
+      wrap.removeEventListener("pointermove", onMove);
+      wrap.removeEventListener("pointerleave", onLeave);
+      wrap.removeEventListener("pointercancel", onLeave);
+      onLeave();
     };
   }, [prefersReduced]);
 
   return (
-    <main className="holo-stage" aria-label="Holographic card page">
-      <div className="holo-aurora" aria-hidden="true" />
+    <main className="holo-stage" aria-label="Denys Vitali links">
+      <div className="holo-scene" aria-hidden="true">
+        <span className="holo-scene__panel holo-scene__panel--one" />
+        <span className="holo-scene__panel holo-scene__panel--two" />
+        <span className="holo-scene__panel holo-scene__panel--three" />
+        <span className="holo-scene__ribbon holo-scene__ribbon--one" />
+        <span className="holo-scene__ribbon holo-scene__ribbon--two" />
+      </div>
       <div className="holo-wrap" ref={wrapRef}>
         <article
           ref={cardRef}
           className="holo-card"
           aria-labelledby="holo-name"
         >
+          <div className="holo-card-depth" aria-hidden="true" />
           <div className="holo-card-glint" aria-hidden="true" />
-          <header className="holo-header">
-            <h1 id="holo-name">Denys Vitali</h1>
-            <p className="holo-bio">
-              Software systems, reverse engineering, Go, Kubernetes, security,
-              and automation that solves real problems.
-            </p>
-          </header>
+          <div className="holo-card-content">
+            <header className="holo-header">
+              <p className="holo-kicker">denv.it</p>
+              <h1 id="holo-name">Denys Vitali</h1>
+              <p className="holo-bio">
+                Software systems, reverse engineering, Go, Kubernetes, security,
+                and automation that solves real problems.
+              </p>
+            </header>
 
-          <nav className="holo-nav" aria-label="Links">
-            <MagneticBlogLink reduced={prefersReduced} />
+            <nav className="holo-nav" aria-label="Links">
+              <MagneticBlogLink reduced={prefersReduced} />
 
-            <ul className="holo-socials" role="list">
-              {socialLinks.map((link) => (
-                <li key={link.href}>
-                  <MagneticSocialLink link={link} reduced={prefersReduced} />
-                </li>
-              ))}
-            </ul>
-          </nav>
+              <ul className="holo-socials" role="list">
+                {socialLinks.map((link) => (
+                  <li key={link.href}>
+                    <MagneticSocialLink link={link} reduced={prefersReduced} />
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
         </article>
       </div>
     </main>
@@ -137,17 +169,20 @@ function MagneticBlogLink({ reduced }) {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - (rect.left + rect.width / 2);
       const y = e.clientY - (rect.top + rect.height / 2);
-      el.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
+      el.style.transform = `translate3d(${x * 0.12}px, ${y * 0.12}px, 0)`;
     };
     const onLeave = () => {
-      el.style.transform = "translate(0,0)";
+      el.style.transform = "translate3d(0, 0, 0)";
     };
 
-    el.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseleave", onLeave);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    el.addEventListener("pointercancel", onLeave);
     return () => {
-      el.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseleave", onLeave);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      el.removeEventListener("pointercancel", onLeave);
+      onLeave();
     };
   }, [reduced]);
 
@@ -156,7 +191,7 @@ function MagneticBlogLink({ reduced }) {
       ref={ref}
       className="holo-blog"
       href={primaryLink.href}
-      aria-label={primaryLink.label}
+      aria-label={`${primaryLink.title}: ${primaryLink.label}`}
     >
       <span className="holo-blog-label">Blog</span>
       <span className="holo-blog-url">
@@ -180,17 +215,20 @@ function MagneticSocialLink({ link, reduced }) {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - (rect.left + rect.width / 2);
       const y = e.clientY - (rect.top + rect.height / 2);
-      el.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+      el.style.transform = `translate3d(${x * 0.16}px, ${y * 0.16}px, 0)`;
     };
     const onLeave = () => {
-      el.style.transform = "translate(0,0)";
+      el.style.transform = "translate3d(0, 0, 0)";
     };
 
-    el.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseleave", onLeave);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    el.addEventListener("pointercancel", onLeave);
     return () => {
-      el.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseleave", onLeave);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      el.removeEventListener("pointercancel", onLeave);
+      onLeave();
     };
   }, [reduced]);
 
