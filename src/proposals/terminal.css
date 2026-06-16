@@ -62,41 +62,56 @@
 
 .term-line {
   min-height: 1.55em;
+  min-width: 0;
 }
 
 .term-prompt {
   color: #33ff33;
   opacity: 0.7;
   user-select: none;
+  white-space: nowrap;
 }
 
 .term-command,
 .term-command-text {
   color: #33ff33;
+  overflow-wrap: anywhere;
 }
 
 .term-output {
   color: #aaffaa;
   opacity: 0.9;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .term-error {
   color: #ff7474;
   opacity: 0.95;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.term-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
 }
 
 .term-session {
   display: flex;
   flex-direction: column;
   gap: 0.12rem;
+  min-width: 0;
 }
 
 .term-link-line {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
+  min-width: 0;
   margin: 0.35rem 0 0.1rem;
 }
 
@@ -106,9 +121,12 @@
   align-items: center;
   gap: 0.35rem;
   color: #00ff66;
+  min-width: 0;
+  max-width: 100%;
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
+  overflow-wrap: anywhere;
   transition: color 0.15s ease;
   outline: none;
 }
@@ -132,6 +150,11 @@
 .term-ls-link:focus-visible {
   box-shadow: 0 0 0 2px #0a0a0a, 0 0 0 4px #00ff66;
   border-radius: 2px;
+}
+
+.term-link svg,
+.term-name-link svg {
+  flex: 0 0 auto;
 }
 
 .term-ls {
@@ -210,9 +233,30 @@
 
 .term-input-form {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 0.5ch;
   min-height: 1.55em;
+  padding: 0 2px;
+  margin-left: -2px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: text;
+  touch-action: manipulation;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.term-input-form:focus-within {
+  border-color: rgba(51, 255, 51, 0.32);
+  background: rgba(51, 255, 51, 0.045);
+  box-shadow: 0 0 0 2px rgba(51, 255, 51, 0.12);
+}
+
+.term-input-prompt {
+  flex: 0 0 auto;
+  padding: 0.05rem 0;
   cursor: text;
 }
 
@@ -230,6 +274,7 @@
   font: inherit;
   line-height: inherit;
   letter-spacing: 0;
+  min-height: 1.55em;
 }
 
 .term-input::selection,
@@ -306,7 +351,8 @@
 
   .term-link,
   .term-name-link,
-  .term-ls-link {
+  .term-ls-link,
+  .term-input-form {
     transition: none;
   }
 }
@@ -349,5 +395,9 @@
 
   .term-ls-row {
     min-width: 40rem;
+  }
+
+  .term-input-form {
+    column-gap: 0.35ch;
   }
 }

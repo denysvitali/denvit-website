@@ -5,8 +5,11 @@ import {
   Code2,
   GitBranch,
   GitCommit,
+  GitFork,
+  History,
   MessageCircle,
   Send,
+  Sparkles,
   Terminal,
 } from "lucide-react";
 import "./gitgraph.css";
@@ -21,8 +24,9 @@ const primaryLink = {
   hash: "b10g4f",
   commit: "feat(blog): publish field notes",
   description:
-    "Long-form notes on systems, security, infrastructure, and useful automation.",
-  color: "#b86b2c",
+    "Long-form notes on systems, security, infrastructure, reverse engineering, and automation.",
+  activity: "latest published notes",
+  color: "#d4773a",
   primary: true,
 };
 
@@ -37,7 +41,8 @@ const socialLinks = [
     hash: "8c41d2",
     commit: "chore(github): push side projects",
     description: "Code, experiments, and public repositories.",
-    color: "#2f6f4e",
+    activity: "source and experiments",
+    color: "#327f63",
   },
   {
     title: "LinkedIn",
@@ -49,7 +54,8 @@ const socialLinks = [
     hash: "4d9a71",
     commit: "docs(work): update professional profile",
     description: "Professional profile and work history.",
-    color: "#386fa4",
+    activity: "work history",
+    color: "#3e6ea8",
   },
   {
     title: "Telegram",
@@ -61,7 +67,8 @@ const socialLinks = [
     hash: "f23a9e",
     commit: "fix(chat): keep direct contact reachable",
     description: "Fastest route for direct messages.",
-    color: "#2f7c86",
+    activity: "direct messages",
+    color: "#16818f",
   },
   {
     title: "Instagram",
@@ -73,7 +80,8 @@ const socialLinks = [
     hash: "7bb520",
     commit: "feat(photo): publish visual notes",
     description: "Photos, trips, and occasional snapshots.",
-    color: "#9a4f7a",
+    activity: "photos and trips",
+    color: "#a04d7c",
   },
   {
     title: "Twitter",
@@ -85,15 +93,18 @@ const socialLinks = [
     hash: "2e6d90",
     commit: "refactor(feed): keep short-form updates tidy",
     description: "Short updates and technical notes.",
-    color: "#8f5f2a",
+    activity: "short updates",
+    color: "#95622e",
   },
 ];
 
 const graphLinks = [primaryLink, ...socialLinks];
+const latestCommit = graphLinks[0];
 
 export default function GitGraph() {
   return (
     <main className="gitgraph-shell">
+      <div className="gitgraph-backdrop" aria-hidden="true" />
       <header className="gitgraph-topbar">
         <a className="gitgraph-brand" href="/" aria-label="Back to home">
           <Terminal size={19} aria-hidden="true" />
@@ -106,21 +117,68 @@ export default function GitGraph() {
       </header>
 
       <section className="gitgraph-workspace" aria-labelledby="gitgraph-title">
-        <div className="gitgraph-heading">
-          <div>
+        <div className="gitgraph-hero">
+          <div className="gitgraph-heading">
             <p className="gitgraph-kicker">
               <GitBranch size={16} aria-hidden="true" />
-              <span>denv.it/link-graph</span>
+              <span>denv.it/link-graph.git</span>
             </p>
             <h1 id="gitgraph-title">Denys Vitali</h1>
+            <p className="gitgraph-intro">
+              A compact commit graph for the useful routes: the blog is the
+              current HEAD, with social links as reachable branches.
+            </p>
           </div>
 
-          <div className="gitgraph-repo-meta" aria-label="Repository summary">
-            <span>
-              <GitCommit size={15} aria-hidden="true" />
-              {graphLinks.length} commits
+          <aside className="gitgraph-status" aria-label="Repository summary">
+            <div>
+              <span className="gitgraph-status-label">HEAD</span>
+              <strong>{latestCommit.title}</strong>
+              <span>{latestCommit.label}</span>
+            </div>
+            <dl>
+              <div>
+                <dt>Commits</dt>
+                <dd>{graphLinks.length}</dd>
+              </div>
+              <div>
+                <dt>Branches</dt>
+                <dd>{socialLinks.length}</dd>
+              </div>
+              <div>
+                <dt>Default</dt>
+                <dd>main</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+
+        <div className="gitgraph-primary-wrap">
+          <a
+            className="gitgraph-primary-card"
+            href={primaryLink.href}
+            aria-label={`Open ${primaryLink.title}: ${primaryLink.label}`}
+          >
+            <span className="gitgraph-primary-orbit" aria-hidden="true">
+              <GitCommit size={34} />
             </span>
-            <span>HEAD -&gt; main</span>
+            <span className="gitgraph-primary-copy">
+              <span className="gitgraph-primary-eyebrow">
+                <Sparkles size={15} aria-hidden="true" />
+                primary action
+              </span>
+              <strong>Read the blog</strong>
+              <span>{primaryLink.description}</span>
+            </span>
+            <span className="gitgraph-primary-cta">
+              {primaryLink.label}
+              <ArrowUpRight size={19} aria-hidden="true" />
+            </span>
+          </a>
+
+          <div className="gitgraph-command" aria-hidden="true">
+            <span>$ git show --stat HEAD</span>
+            <span>{primaryLink.hash}</span>
           </div>
         </div>
 
@@ -131,7 +189,13 @@ export default function GitGraph() {
               <span />
               <span />
             </span>
-            <span className="gitgraph-board-title">git log --graph --decorate</span>
+            <span className="gitgraph-board-title">
+              git log --graph --decorate --oneline
+            </span>
+            <span className="gitgraph-board-meta">
+              <History size={14} />
+              newest first
+            </span>
           </div>
 
           <ol className="gitgraph-log" role="list">
@@ -179,6 +243,10 @@ function GitGraphEntry({ link, index }) {
         aria-label={`${link.title}: ${link.label}. ${link.commit}. ${link.branch}, ${link.tag}.`}
       >
         <span className="gitgraph-entry-main">
+          <span className="gitgraph-entry-kicker">
+            <GitFork size={13} aria-hidden="true" />
+            {link.primary ? "main" : link.branch}
+          </span>
           <span className="gitgraph-entry-title">
             <Icon size={18} aria-hidden="true" />
             <strong>{link.title}</strong>
@@ -196,10 +264,7 @@ function GitGraphEntry({ link, index }) {
 
         <span className="gitgraph-entry-meta" aria-hidden="true">
           <span className="gitgraph-hash">{link.hash}</span>
-          <span className="gitgraph-branch-name">
-            <GitBranch size={13} aria-hidden="true" />
-            {link.branch}
-          </span>
+          <span>{link.activity}</span>
           <span className="gitgraph-tag">{link.tag}</span>
         </span>
       </a>

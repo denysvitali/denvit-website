@@ -8,6 +8,8 @@ const prefersReducedMotion =
 
 const BLOG_URL = "https://blog.denv.it";
 const CWD = "/home/denvit";
+const HOSTNAME = "denvit-web";
+const PROMPT = `denvit@${HOSTNAME}:~$`;
 
 const socialLinks = [
   {
@@ -58,6 +60,27 @@ const readmeLines = [
   "",
   `Primary link: ${BLOG_URL}`,
   "Social links live in ~/social. Try: ls -la ~/social",
+  "",
+  "This terminal is a local browser sandbox. A real Linux/WASM lab could fit here later.",
+];
+
+const motdLines = [
+  "Welcome to denvit-web 6.8.0-browser-sandbox",
+  "",
+  "This shell runs simulated, local-only commands in your browser.",
+  "No command is sent to a server and no host filesystem is mounted.",
+  "Try: help, ls -la, cat README.md, open blog",
+];
+
+const envLines = [
+  "HOME=/home/denvit",
+  "HOSTNAME=denvit-web",
+  "LANG=C.UTF-8",
+  "PATH=/usr/local/bin:/usr/bin:/bin",
+  "PWD=/home/denvit",
+  "SHELL=/bin/browser-sh",
+  "TERM=xterm-256color",
+  "USER=denvit",
 ];
 
 const rootEntries = [
@@ -166,12 +189,20 @@ const directories = {
 };
 
 const bootLines = [
-  { type: "command", text: "whoami" },
-  { type: "output", text: "Denys Vitali" },
   {
     type: "output",
-    text: "Software systems, reverse engineering, Go, Kubernetes, security, automation.",
+    text: "Last login: Tue Jun 16 09:14:07 2026 from 127.0.0.1",
   },
+  { type: "command", text: "uname -a" },
+  {
+    type: "output",
+    text: "Linux denvit-web 6.8.0-browser-sandbox #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux",
+  },
+  { type: "command", text: "cat /etc/motd" },
+  ...motdLines.map((text) => ({ type: "output", text })),
+  { type: "command", text: "cat README.md" },
+  ...readmeLines.slice(0, 5).map((text) => ({ type: "output", text })),
+  { type: "output", text: "Type help to list supported sandbox commands." },
   { type: "command", text: "open blog" },
   {
     type: "link",
@@ -180,13 +211,12 @@ const bootLines = [
     label: "Open blog",
     primary: true,
   },
-  { type: "command", text: "ls -la ~/social" },
+  { type: "command", text: "ls -la" },
   {
     type: "ls",
-    total: directories.social.total,
-    rows: directories.social.entries,
+    total: directories.home.total,
+    rows: directories.home.entries,
   },
-  { type: "output", text: "Type help to list supported sandbox commands." },
 ];
 
 const readmeAliases = new Set([
@@ -231,6 +261,44 @@ function resolveDirectory(path = "") {
   return "";
 }
 
+function normalizeHomePath(path = "") {
+  const normalized = normalizeLookup(path || ".");
+
+  if (normalized.startsWith(`${CWD.toLowerCase()}/`)) {
+    return normalized.slice(CWD.length + 1);
+  }
+
+  if (normalized.startsWith("~/")) {
+    return normalized.slice(2);
+  }
+
+  if (normalized.startsWith("./")) {
+    return normalized.slice(2);
+  }
+
+  return normalized;
+}
+
+function findDirectoryEntry(path = "") {
+  const normalized = normalizeHomePath(path);
+
+  if (!normalized || normalized.includes("/")) {
+    return null;
+  }
+
+  return (
+    rootEntries.find((entry) => {
+      if (entry.hidden) return false;
+      const names = [
+        entry.shortName,
+        entry.name,
+        formatEntryName(entry).replace(/[\/@]$/, ""),
+      ].filter(Boolean);
+      return names.some((name) => normalizeLookup(name) === normalized);
+    }) || null
+  );
+}
+
 function isReadmePath(path) {
   return readmeAliases.has(normalizeLookup(path));
 }
@@ -270,6 +338,29 @@ function listDirectory(args) {
   }
 
   const directoryKey = resolveDirectory(targetPath);
+
+  if (!directoryKey && targetPath) {
+    const entry = findDirectoryEntry(targetPath);
+
+    if (entry) {
+      if (longFormat) {
+        return result([
+          {
+            type: "ls",
+            total: "",
+            rows: [entry],
+          },
+        ]);
+      }
+
+      return result([
+        {
+          type: "names",
+          items: [entry],
+        },
+      ]);
+    }
+  }
 
   if (!directoryKey) {
     return result([
@@ -330,6 +421,32 @@ function readReadme(args) {
   }
 
   return result(readmeLines.map((text) => ({ type: "output", text })));
+}
+
+function readLocalFile(args) {
+  if (args.length === 0) {
+    return result([
+      { type: "error", text: "cat: missing operand" },
+      { type: "output", text: "Try: cat README.md or cat /etc/motd" },
+    ]);
+  }
+
+  if (args.length > 1) {
+    return result([
+      {
+        type: "error",
+        text: "cat: multiple files are not supported in this sandbox",
+      },
+    ]);
+  }
+
+  const path = normalizeLookup(args[0]);
+
+  if (path === "/etc/motd" || path === "motd") {
+    return result(motdLines.map((text) => ({ type: "output", text })));
+  }
+
+  return readReadme(args);
 }
 
 function findOpenTarget(args) {
@@ -399,12 +516,19 @@ function openKnownTarget(args) {
 
 function supportedCommands() {
   return result([
-    { type: "output", text: "Supported sandbox commands:" },
+    { type: "output", text: "Supported local sandbox commands:" },
     { type: "output", text: "  help                         show this list" },
     { type: "output", text: "  whoami                       print the sandbox user" },
+    { type: "output", text: "  hostname                     print the sandbox host" },
+    { type: "output", text: "  id                           print simulated uid/gid data" },
+    { type: "output", text: "  uname [-a]                   print simulated kernel info" },
+    { type: "output", text: "  date                         print this device's local time" },
     { type: "output", text: "  pwd                          print the current directory" },
+    { type: "output", text: "  env                          print simulated environment" },
+    { type: "output", text: "  echo [text]                  print text back" },
     { type: "output", text: "  ls [-la] [~/social]          list local sandbox files" },
-    { type: "output", text: "  cat README.md | readme       read the profile note" },
+    { type: "output", text: "  cat README.md or /etc/motd   read local sandbox files" },
+    { type: "output", text: "  readme                       same as cat README.md" },
     { type: "output", text: "  open blog|github|linkedin    open a known external link" },
     { type: "output", text: "  open social                  show all known social links" },
     { type: "output", text: "  history                      show command history" },
@@ -421,6 +545,19 @@ function commandHistoryOutput(history) {
   );
 }
 
+function formatDeviceDate(date) {
+  return date.toLocaleString(undefined, {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 function runCommand(command, history) {
   const parts = command.split(/\s+/);
   const verb = parts[0].toLowerCase();
@@ -434,8 +571,53 @@ function runCommand(command, history) {
     return result([{ type: "output", text: "denvit" }]);
   }
 
+  if (verb === "hostname") {
+    return result([{ type: "output", text: HOSTNAME }]);
+  }
+
+  if (verb === "id") {
+    return result([
+      {
+        type: "output",
+        text: "uid=1000(denvit) gid=1000(denvit) groups=1000(denvit),27(sudo),100(users)",
+      },
+    ]);
+  }
+
+  if (verb === "uname") {
+    const invalidFlag = args.find((arg) => arg.startsWith("-") && arg !== "-a");
+
+    if (invalidFlag) {
+      return result([
+        { type: "error", text: `uname: invalid option -- '${invalidFlag}'` },
+        { type: "output", text: "Try: uname or uname -a" },
+      ]);
+    }
+
+    return result([
+      {
+        type: "output",
+        text: args.includes("-a")
+          ? "Linux denvit-web 6.8.0-browser-sandbox #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux"
+          : "Linux",
+      },
+    ]);
+  }
+
+  if (verb === "date") {
+    return result([{ type: "output", text: formatDeviceDate(new Date()) }]);
+  }
+
   if (verb === "pwd") {
     return result([{ type: "output", text: CWD }]);
+  }
+
+  if (verb === "env" || verb === "printenv") {
+    return result(envLines.map((text) => ({ type: "output", text })));
+  }
+
+  if (verb === "echo") {
+    return result([{ type: "output", text: args.join(" ") }]);
   }
 
   if (verb === "ls") {
@@ -443,7 +625,7 @@ function runCommand(command, history) {
   }
 
   if (verb === "cat") {
-    return readReadme(args);
+    return readLocalFile(args);
   }
 
   if (verb === "readme" || verb === "cat/readme") {
@@ -465,7 +647,7 @@ function runCommand(command, history) {
   return result([
     {
       type: "error",
-      text: `${verb}: command not found in this sandbox`,
+      text: `${verb}: command not found in this local sandbox`,
     },
     { type: "output", text: "Type help for supported commands." },
   ]);
@@ -650,7 +832,7 @@ export default function TerminalHome() {
   const renderCommandLine = (command, key, isTyping = false) => (
     <div key={key} className="term-line term-command">
       <span className="term-prompt" aria-hidden="true">
-        $
+        {PROMPT}
       </span>{" "}
       <span className="term-command-text">{command}</span>
       {isTyping && renderCursor()}
@@ -659,7 +841,9 @@ export default function TerminalHome() {
 
   const renderLsOutput = (line, key) => (
     <div key={key} className="term-ls" role="group" aria-label="ls output">
-      <div className="term-line term-output">total {line.total}</div>
+      {line.total && (
+        <div className="term-line term-output">total {line.total}</div>
+      )}
       {line.rows.map((row) => {
         const content = (
           <>
@@ -801,30 +985,42 @@ export default function TerminalHome() {
         <div className="term-content">
           {bootLines.map((line, i) => renderBootLine(line, i))}
 
-          {sessions.map((session) => (
-            <div className="term-session" key={session.id}>
-              {renderCommandLine(
-                session.command,
-                `session-${session.id}-command`
-              )}
-              {session.output.map((line, index) =>
-                renderOutput(line, `session-${session.id}-output-${index}`)
-              )}
-            </div>
-          ))}
+          <div
+            className="term-history"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+          >
+            {sessions.map((session) => (
+              <div className="term-session" key={session.id}>
+                {renderCommandLine(
+                  session.command,
+                  `session-${session.id}-command`
+                )}
+                {session.output.map((line, index) =>
+                  renderOutput(line, `session-${session.id}-output-${index}`)
+                )}
+              </div>
+            ))}
+          </div>
 
           {isReady && (
             <form
               className="term-input-form"
               onSubmit={handleSubmit}
               onClick={focusInput}
+              onPointerDown={focusInput}
             >
               <label className="term-sr-only" htmlFor="terminal-command">
                 Terminal command
               </label>
-              <span className="term-prompt" aria-hidden="true">
-                $
-              </span>
+              <label
+                className="term-prompt term-input-prompt"
+                htmlFor="terminal-command"
+                aria-label="Focus terminal input"
+              >
+                {PROMPT}
+              </label>
               <input
                 id="terminal-command"
                 ref={inputRef}
