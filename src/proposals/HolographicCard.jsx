@@ -52,24 +52,31 @@ export default function HolographicCard() {
   const cardRef = useRef(null);
   const wrapRef = useRef(null);
   const [prefersReduced, setPrefersReduced] = useState(false);
+  const [prefersReducedTransparency, setPrefersReducedTransparency] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReduced(mq.matches);
-    const onChange = (e) => setPrefersReduced(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqTransparency = window.matchMedia("(prefers-reduced-transparency: reduce)");
+    setPrefersReduced(mqMotion.matches);
+    setPrefersReducedTransparency(mqTransparency.matches);
+    const onMotionChange = (e) => setPrefersReduced(e.matches);
+    const onTransparencyChange = (e) => setPrefersReducedTransparency(e.matches);
+    mqMotion.addEventListener("change", onMotionChange);
+    mqTransparency.addEventListener("change", onTransparencyChange);
+    return () => {
+      mqMotion.removeEventListener("change", onMotionChange);
+      mqTransparency.removeEventListener("change", onTransparencyChange);
+    };
   }, []);
 
   useEffect(() => {
     const card = cardRef.current;
+    if (!card) return;
 
     if (prefersReduced) {
-      if (card) {
-        card.style.transform = "";
-        card.style.removeProperty("--pointer-x");
-        card.style.removeProperty("--pointer-y");
-      }
+      card.style.transform = "";
+      card.style.removeProperty("--pointer-x");
+      card.style.removeProperty("--pointer-y");
       return;
     }
 
@@ -82,8 +89,6 @@ export default function HolographicCard() {
       const cy = rect.top + rect.height / 2;
       const dx = (e.clientX - cx) / (rect.width / 2);
       const dy = (e.clientY - cy) / (rect.height / 2);
-      const card = cardRef.current;
-      if (!card) return;
       const pointerX = Math.max(0, Math.min(100, ((dx + 1) / 2) * 100));
       const pointerY = Math.max(0, Math.min(100, ((dy + 1) / 2) * 100));
 
@@ -93,12 +98,9 @@ export default function HolographicCard() {
     };
 
     const onLeave = () => {
-      const card = cardRef.current;
-      if (!card) return;
       card.style.setProperty("--pointer-x", "50%");
       card.style.setProperty("--pointer-y", "40%");
-      card.style.transform =
-        "perspective(1100px) rotateX(0deg) rotateY(0deg) translateZ(0)";
+      card.style.transform = "perspective(1100px) rotateX(0deg) rotateY(0deg) translateZ(0)";
     };
 
     wrap.addEventListener("pointermove", onMove);
@@ -113,47 +115,154 @@ export default function HolographicCard() {
   }, [prefersReduced]);
 
   return (
-    <main className="holo-stage" aria-label="Denys Vitali links">
-      <div className="holo-scene" aria-hidden="true">
-        <span className="holo-scene__panel holo-scene__panel--one" />
-        <span className="holo-scene__panel holo-scene__panel--two" />
-        <span className="holo-scene__panel holo-scene__panel--three" />
-        <span className="holo-scene__ribbon holo-scene__ribbon--one" />
-        <span className="holo-scene__ribbon holo-scene__ribbon--two" />
-      </div>
-      <div className="holo-wrap" ref={wrapRef}>
-        <article
-          ref={cardRef}
-          className="holo-card"
-          aria-labelledby="holo-name"
-        >
-          <div className="holo-card-depth" aria-hidden="true" />
-          <div className="holo-card-glint" aria-hidden="true" />
-          <div className="holo-card-content">
-            <header className="holo-header">
-              <p className="holo-kicker">denv.it</p>
-              <h1 id="holo-name">Denys Vitali</h1>
-              <p className="holo-bio">
-                Software systems, reverse engineering, Go, Kubernetes, security,
-                and automation that solves real problems.
-              </p>
-            </header>
+    <>
+      {/* Hidden SVG defining the liquid-glass filter pipeline */}
+      <svg className="lg-svg-defs" aria-hidden="true">
+        <defs>
+          <filter
+            id="liquid-glass"
+            x="-20%"
+            y="-20%"
+            width="140%"
+            height="140%"
+            filterUnits="objectBoundingBox"
+            primitiveUnits="objectBoundingBox"
+          >
+            {/* 1. Base blur of the backdrop */}
+            <feGaussianBlur
+              in="SourceGraphic"
+              stdDeviation="0.025"
+              result="blur"
+            />
 
-            <nav className="holo-nav" aria-label="Links">
-              <MagneticBlogLink reduced={prefersReduced} />
+            {/* 2. Procedural displacement map using turbulence */}
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.6"
+              numOctaves="3"
+              seed="5"
+              result="noise"
+            />
+            <feColorMatrix
+              in="noise"
+              type="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"
+              result="displacementMap"
+            />
 
-              <ul className="holo-socials" role="list">
-                {socialLinks.map((link) => (
-                  <li key={link.href}>
-                    <MagneticSocialLink link={link} reduced={prefersReduced} />
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        </article>
-      </div>
-    </main>
+            {/* 3. Refraction distortion via displacement */}
+            <feDisplacementMap
+              in="blur"
+              in2="displacementMap"
+              scale="0.015"
+              xChannelSelector="R"
+              yChannelSelector="G"
+              result="refracted"
+            />
+
+            {/* 4. Saturation boost for vibrancy */}
+            <feColorMatrix
+              in="refracted"
+              type="saturate"
+              values="1.6"
+              result="saturated"
+            />
+
+            {/* 5. Specular lighting for glossy edge highlights */}
+            <feSpecularLighting
+              in="displacementMap"
+              surfaceScale="2"
+              specularConstant="0.9"
+              specularExponent="28"
+              lightingColor="#ffffff"
+              result="specular"
+            >
+              <fePointLight x="-0.3" y="-0.3" z="0.8" />
+            </feSpecularLighting>
+
+            {/* 6. Composite specular on top of saturated refracted image */}
+            <feComposite
+              in="specular"
+              in2="saturated"
+              operator="arithmetic"
+              k1="0"
+              k2="1"
+              k3="0.55"
+              k4="0"
+              result="lit"
+            />
+
+            {/* 7. Brightness lift */}
+            <feComponentTransfer in="lit" result="final">
+              <feFuncA type="linear" slope="0.92" intercept="0" />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+      </svg>
+
+      <main className="holo-stage" aria-label="Denys Vitali links">
+        {/* Animated background layers */}
+        <div className="holo-bg" aria-hidden="true">
+          <div className="holo-bg__layer holo-bg__layer--aurora" />
+          <div className="holo-bg__layer holo-bg__layer--mesh" />
+          <div className="holo-bg__layer holo-bg__layer--orbs" />
+          <div className="holo-bg__layer holo-bg__layer--ribbons" />
+        </div>
+
+        <div className="holo-scene" aria-hidden="true">
+          <span className="holo-scene__panel holo-scene__panel--one" />
+          <span className="holo-scene__panel holo-scene__panel--two" />
+          <span className="holo-scene__panel holo-scene__panel--three" />
+          <span className="holo-scene__ribbon holo-scene__ribbon--one" />
+          <span className="holo-scene__ribbon holo-scene__ribbon--two" />
+        </div>
+
+        <div className="holo-wrap" ref={wrapRef}>
+          <article
+            ref={cardRef}
+            className="holo-card"
+            aria-labelledby="holo-name"
+            data-reduced-transparency={prefersReducedTransparency}
+          >
+            {/* Liquid-glass filter layer */}
+            <div className="holo-card-liquid" aria-hidden="true" />
+
+            {/* Depth / inner bevel layer */}
+            <div className="holo-card-depth" aria-hidden="true" />
+
+            {/* Specular glint layer */}
+            <div className="holo-card-glint" aria-hidden="true" />
+
+            {/* Fresnel edge highlight */}
+            <div className="holo-card-rim" aria-hidden="true" />
+
+            {/* Content stays readable via isolation */}
+            <div className="holo-card-content">
+              <header className="holo-header">
+                <p className="holo-kicker">denv.it</p>
+                <h1 id="holo-name">Denys Vitali</h1>
+                <p className="holo-bio">
+                  Software systems, reverse engineering, Go, Kubernetes, security,
+                  and automation that solves real problems.
+                </p>
+              </header>
+
+              <nav className="holo-nav" aria-label="Links">
+                <MagneticBlogLink reduced={prefersReduced} />
+
+                <ul className="holo-socials" role="list">
+                  {socialLinks.map((link) => (
+                    <li key={link.href}>
+                      <MagneticSocialLink link={link} reduced={prefersReduced} />
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </div>
+          </article>
+        </div>
+      </main>
+    </>
   );
 }
 
