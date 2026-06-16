@@ -1,0 +1,277 @@
+/* ===== Git Graph theme ===== */
+
+.gitgraph-shell {
+  min-height: 100vh;
+  background: #0b0f14;
+  color: #e2e8f0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Topbar */
+.gitgraph-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.gitgraph-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.2px;
+}
+
+.gitgraph-brand:hover,
+.gitgraph-brand:focus-visible {
+  color: #22d3ee;
+  outline: none;
+}
+
+.gitgraph-topbar nav {
+  display: flex;
+  gap: 18px;
+}
+
+.gitgraph-topbar nav a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 4px 6px;
+  transition: color 0.2s ease;
+}
+
+.gitgraph-topbar nav a:hover,
+.gitgraph-topbar nav a:focus-visible {
+  color: #e2e8f0;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25);
+}
+
+/* Stage */
+.gitgraph-stage {
+  padding: 48px 24px 64px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.gitgraph-canvas {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+/* SVG */
+.gitgraph-svg {
+  flex: 0 0 auto;
+  width: 220px;
+  height: auto;
+  overflow: visible;
+}
+
+.gitgraph-line {
+  stroke-dashoffset: var(--dash, 0);
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gitgraph-line.ready {
+  stroke-dashoffset: 0;
+}
+
+.gitgraph-node {
+  fill: #0b0f14;
+  stroke-width: 2.5;
+  transform: scale(0);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gitgraph-node.trunk {
+  stroke: #22d3ee;
+}
+
+.gitgraph-node.branch {
+  stroke: #a78bfa;
+}
+
+.gitgraph-node.ready {
+  transform: scale(1);
+}
+
+.gitgraph-pulse {
+  fill: none;
+  stroke: #22d3ee;
+  stroke-width: 1.5;
+  opacity: 0.6;
+  animation: gitgraphPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes gitgraphPulse {
+  0% {
+    r: 10;
+    opacity: 0.6;
+  }
+  70% {
+    r: 22;
+    opacity: 0;
+  }
+  100% {
+    r: 22;
+    opacity: 0;
+  }
+}
+
+/* List */
+.gitgraph-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.gitgraph-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 72px;
+  padding: 8px 0;
+}
+
+.gitgraph-branch-icon {
+  color: #a78bfa;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.gitgraph-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.gitgraph-link:hover,
+.gitgraph-link:focus-visible {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.2);
+  outline: none;
+}
+
+.trunk-link {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #22d3ee;
+}
+
+.trunk-link:hover,
+.trunk-link:focus-visible {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+.gitgraph-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.trunk-link .gitgraph-url {
+  color: #0ea5e9;
+}
+
+/* Tooltip */
+.gitgraph-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  animation: tooltipIn 0.18s ease forwards;
+}
+
+@keyframes tooltipIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -90%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .gitgraph-line,
+  .gitgraph-node,
+  .gitgraph-pulse {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .gitgraph-line {
+    stroke-dashoffset: 0 !important;
+  }
+
+  .gitgraph-node {
+    transform: scale(1) !important;
+  }
+
+  .gitgraph-pulse {
+    opacity: 0;
+  }
+
+  .gitgraph-tooltip {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+  .gitgraph-canvas {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .gitgraph-svg {
+    width: 180px;
+  }
+
+  .gitgraph-stage {
+    padding: 28px 16px 48px;
+  }
+}
