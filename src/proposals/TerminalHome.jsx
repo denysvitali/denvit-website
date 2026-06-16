@@ -66,9 +66,6 @@ const readmeLines = [
 
 const motdLines = [
   "Welcome to denvit-web 6.8.0-browser-sandbox",
-  "",
-  "This shell runs simulated, local-only commands in your browser.",
-  "No command is sent to a server and no host filesystem is mounted.",
   "Try: help, ls -la, cat README.md, open blog",
 ];
 
@@ -200,17 +197,7 @@ const bootLines = [
   },
   { type: "command", text: "cat /etc/motd" },
   ...motdLines.map((text) => ({ type: "output", text })),
-  { type: "command", text: "cat README.md" },
-  ...readmeLines.slice(0, 5).map((text) => ({ type: "output", text })),
   { type: "output", text: "Type help to list supported sandbox commands." },
-  { type: "command", text: "open blog" },
-  {
-    type: "link",
-    text: BLOG_URL,
-    href: BLOG_URL,
-    label: "Open blog",
-    primary: true,
-  },
   { type: "command", text: "ls -la" },
   {
     type: "ls",
@@ -653,18 +640,36 @@ function runCommand(command, history) {
   ]);
 }
 
+function isDirectory(entry) {
+  return entry.mode.startsWith("d");
+}
+
+function isSymlink(entry) {
+  return entry.mode.startsWith("l");
+}
+
 function formatEntryName(entry) {
   const name = entry.shortName || entry.name.split(" -> ")[0];
 
-  if (entry.mode.startsWith("d") && name !== "." && name !== "..") {
+  if (isDirectory(entry) && name !== "." && name !== "..") {
     return `${name}/`;
   }
 
-  if (entry.mode.startsWith("l")) {
+  if (isSymlink(entry)) {
     return `${name}@`;
   }
 
   return name;
+}
+
+function entryNameClass(entry) {
+  if (isDirectory(entry) && entry.shortName !== "." && entry.shortName !== "..") {
+    return "term-name-dir";
+  }
+  if (isSymlink(entry)) {
+    return "term-name-link-symlink";
+  }
+  return "term-name";
 }
 
 export default function TerminalHome() {
@@ -829,11 +834,24 @@ export default function TerminalHome() {
     />
   );
 
+  const renderPrompt = () => {
+    const [userHost, pathAndDollar] = PROMPT.split(":");
+    const path = pathAndDollar.slice(0, -1);
+    const dollar = pathAndDollar.slice(-1);
+
+    return (
+      <span className="term-prompt" aria-hidden="true">
+        <span className="term-prompt-userhost">{userHost}</span>
+        <span>:</span>
+        <span className="term-prompt-path">{path}</span>
+        <span>{dollar}</span>
+      </span>
+    );
+  };
+
   const renderCommandLine = (command, key, isTyping = false) => (
     <div key={key} className="term-line term-command">
-      <span className="term-prompt" aria-hidden="true">
-        {PROMPT}
-      </span>{" "}
+      {renderPrompt()}{" "}
       <span className="term-command-text">{command}</span>
       {isTyping && renderCursor()}
     </div>
@@ -853,7 +871,7 @@ export default function TerminalHome() {
             <span className="term-group">{row.group}</span>
             <span className="term-size">{row.size}</span>
             <span className="term-date">{row.date}</span>
-            <span className="term-name">{row.name}</span>
+            <span className={entryNameClass(row)}>{row.name}</span>
             {row.href && <ExternalLink size={14} aria-hidden="true" />}
           </>
         );
@@ -892,7 +910,7 @@ export default function TerminalHome() {
             <a
               key={item.name}
               href={item.href}
-              className="term-name-link"
+              className={`term-name-link ${isSymlink(item) ? "term-name-link-symlink" : ""}`}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open ${item.label}`}
@@ -902,7 +920,11 @@ export default function TerminalHome() {
           );
         }
 
-        return <span key={item.name}>{name}</span>;
+        return (
+          <span key={item.name} className={entryNameClass(item)}>
+            {name}
+          </span>
+        );
       })}
     </div>
   );
@@ -1019,7 +1041,7 @@ export default function TerminalHome() {
                 htmlFor="terminal-command"
                 aria-label="Focus terminal input"
               >
-                {PROMPT}
+                {renderPrompt()}
               </label>
               <input
                 id="terminal-command"
