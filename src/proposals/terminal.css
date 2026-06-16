@@ -1,0 +1,244 @@
+.term-shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0a0a;
+  color: #33ff33;
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* CRT screen-door / vignette */
+.term-crt {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0) 60%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+/* Scanlines */
+.term-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 11;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  opacity: 0.45;
+}
+
+.term-screen {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem 1.5rem 3rem;
+  box-sizing: border-box;
+}
+
+.term-content {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.term-line {
+  min-height: 1.55em;
+}
+
+.term-prompt {
+  color: #33ff33;
+  opacity: 0.7;
+  user-select: none;
+}
+
+.term-command {
+  color: #33ff33;
+}
+
+.term-command-text {
+  color: #33ff33;
+}
+
+.term-output {
+  color: #aaffaa;
+  opacity: 0.9;
+}
+
+/* Blog link — visually dominant */
+.term-link-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0.2rem;
+}
+
+.term-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #00ff66;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+  transition: color 0.15s ease;
+  outline: none;
+}
+
+.term-link:hover,
+.term-link:focus-visible {
+  color: #66ff99;
+  text-decoration-color: #66ff99;
+}
+
+.term-link:focus-visible {
+  box-shadow: 0 0 0 2px #0a0a0a, 0 0 0 4px #00ff66;
+  border-radius: 2px;
+}
+
+/* ls -la table */
+.term-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  margin-top: 0.2rem;
+}
+
+.term-table-row {
+  display: grid;
+  grid-template-columns: 7.5rem 4.5rem 4.5rem 3rem 7.5rem auto 1.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: #aaffaa;
+  text-decoration: none;
+  padding: 0.15rem 0.25rem;
+  border-radius: 2px;
+  outline: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.term-table-row:hover,
+.term-table-row:focus-visible {
+  background: rgba(51, 255, 51, 0.08);
+  color: #33ff33;
+}
+
+.term-table-row:focus-visible {
+  box-shadow: 0 0 0 2px #0a0a0a, 0 0 0 4px #33ff33;
+}
+
+.term-perms {
+  color: #33ff33;
+  opacity: 0.7;
+}
+
+.term-user,
+.term-group {
+  color: #aaffaa;
+  opacity: 0.7;
+}
+
+.term-size {
+  color: #aaffaa;
+  opacity: 0.6;
+  text-align: right;
+}
+
+.term-date {
+  color: #aaffaa;
+  opacity: 0.6;
+}
+
+.term-name {
+  color: #33ff33;
+  font-weight: 500;
+}
+
+/* Cursor */
+.term-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.15em;
+  background: #33ff33;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: term-blink 1.06s step-end infinite;
+}
+
+.term-cursor-off {
+  animation: none;
+  opacity: 0;
+}
+
+@keyframes term-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: disable typing, show all, stop cursor blink */
+@media (prefers-reduced-motion: reduce) {
+  .term-cursor {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Scrollbar styling */
+.term-screen::-webkit-scrollbar {
+  width: 6px;
+}
+
+.term-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.term-screen::-webkit-scrollbar-thumb {
+  background: rgba(51, 255, 51, 0.25);
+  border-radius: 3px;
+}
+
+.term-screen::-webkit-scrollbar-thumb:hover {
+  background: rgba(51, 255, 51, 0.45);
+}
+
+/* Mobile: stack ls table */
+@media (max-width: 640px) {
+  .term-table-row {
+    grid-template-columns: 7rem 4rem 4rem 2.5rem 6rem auto 1.25rem;
+    gap: 0.3rem;
+    font-size: 13px;
+  }
+
+  .term-link {
+    font-size: 1.05rem;
+  }
+
+  .term-screen {
+    padding: 1.25rem 1rem 2rem;
+  }
+}
