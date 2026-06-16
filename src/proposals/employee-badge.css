@@ -1,0 +1,702 @@
+/* ============================================================
+   Glass employee badge
+   - Real employee-ID card geometry (portrait, lanyard slot)
+   - Liquid glass via SVG filter (refraction + specular) + backdrop-filter
+   - Animated aurora bg shows through the glass
+   ============================================================ */
+
+.badge-stage {
+  --ink: #ffffff;
+  --ink-strong: #ffffff;
+  --ink-dim: rgba(255, 255, 255, 0.72);
+  --ink-faint: rgba(255, 255, 255, 0.5);
+  --ink-ghost: rgba(255, 255, 255, 0.3);
+  --accent: #11b88e;
+  --accent-warm: #ff8a5b;
+  --accent-cool: #5b8aff;
+  --accent-gold: #f4c24c;
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100svh;
+  padding: 24px 16px 22px;
+  gap: 18px;
+  color: var(--ink);
+  background: #060d12;
+  overflow: hidden;
+}
+
+.lg-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ===== Background scenery (visible THROUGH the glass) ===== */
+.badge-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.badge-bg__aurora {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(ellipse 65% 50% at 18% 30%, rgba(17, 184, 142, 0.45), transparent 60%),
+    radial-gradient(ellipse 55% 60% at 82% 22%, rgba(255, 138, 91, 0.36), transparent 60%),
+    radial-gradient(ellipse 60% 55% at 50% 82%, rgba(91, 138, 255, 0.32), transparent 60%),
+    radial-gradient(ellipse 40% 40% at 75% 70%, rgba(244, 194, 76, 0.24), transparent 55%),
+    linear-gradient(180deg, #060d12 0%, #0d1c20 50%, #060d12 100%);
+  animation: badgeAurora 32s ease-in-out infinite alternate;
+}
+
+.badge-bg__grid {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 56px);
+  opacity: 0.45;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 80%);
+}
+
+.badge-bg__orbs {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(17, 184, 142, 0.22), transparent 30%),
+    radial-gradient(circle at 70% 25%, rgba(255, 138, 91, 0.18), transparent 28%),
+    radial-gradient(circle at 50% 80%, rgba(91, 138, 255, 0.2), transparent 35%);
+  animation: badgeOrbFloat 28s ease-in-out infinite alternate;
+}
+
+.badge-bg__stripes {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(112deg, transparent 0 38%, rgba(255, 255, 255, 0.05) 38% 40%, transparent 40% 100%),
+    linear-gradient(72deg, transparent 0 62%, rgba(255, 255, 255, 0.04) 62% 64%, transparent 64% 100%);
+  background-size: 220% 220%;
+  animation: badgeStripes 42s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes badgeAurora {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(3%, -2%, 0) scale(1.06); }
+}
+
+@keyframes badgeOrbFloat {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-3%, 2%, 0); }
+}
+
+@keyframes badgeStripes {
+  0% { background-position: 0% 50%, 100% 50%; }
+  100% { background-position: 100% 50%, 0% 50%; }
+}
+
+/* ===== Top bar ===== */
+.badge-topbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.badge-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  transition: opacity 160ms ease;
+}
+
+.badge-home:hover { opacity: 1; }
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid rgba(17, 184, 142, 0.4);
+  border-radius: 999px;
+  background: rgba(17, 184, 142, 0.12);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+/* ===== Card stage (perspective wrapper) ===== */
+.badge-wrap {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+}
+
+/* ===== The glass badge ===== */
+.badge {
+  --pointer-x: 50%;
+  --pointer-y: 30%;
+
+  position: relative;
+  display: grid;
+  width: min(380px, 100%);
+  aspect-ratio: 1 / 1.45;
+  padding: 30px 26px 22px;
+  overflow: visible;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 22px;
+  box-shadow:
+    0 40px 100px rgba(0, 0, 0, 0.55),
+    0 20px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 24px 48px rgba(255, 255, 255, 0.1) inset,
+    0 -32px 60px rgba(0, 0, 0, 0.32) inset;
+  transform-style: preserve-3d;
+  transition: transform 240ms ease-out;
+  will-change: transform;
+
+  /* Standard backdrop-filter fallback that the SVG filter layer replaces/augments */
+  backdrop-filter: blur(36px) saturate(1.9) contrast(1.05) brightness(1.04);
+  -webkit-backdrop-filter: blur(36px) saturate(1.9) contrast(1.05) brightness(1.04);
+}
+
+/* Layer 1 — liquid glass (SVG filter via backdrop-filter) */
+.badge-liquid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  backdrop-filter: url(#liquid-glass-badge) brightness(118%) saturate(1.4);
+  -webkit-backdrop-filter: url(#liquid-glass-badge) brightness(118%) saturate(1.4);
+  opacity: 0.96;
+}
+
+/* Layer 2 — inner depth / bevel */
+.badge-depth {
+  position: absolute;
+  inset: 7px;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.32), transparent 22%),
+    radial-gradient(circle at 10% 65%, rgba(255, 138, 91, 0.1), transparent 30%),
+    radial-gradient(circle at 90% 75%, rgba(91, 138, 255, 0.12), transparent 32%),
+    linear-gradient(180deg, transparent 0 60%, rgba(0, 0, 0, 0.12) 100%);
+  opacity: 0.9;
+}
+
+/* Layer 3 — holographic rainbow strip (the security foil on real badges) */
+.badge-holo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg,
+    transparent 0 14%,
+    rgba(255, 60, 130, 0.22) 18%,
+    rgba(255, 154, 0, 0.22) 25%,
+    rgba(255, 238, 0, 0.2) 32%,
+    rgba(0, 220, 130, 0.22) 40%,
+    rgba(0, 160, 255, 0.22) 48%,
+    rgba(140, 60, 255, 0.22) 56%,
+    transparent 62% 100%);
+  background-size: 240% 100%;
+  background-position: 0% 50%;
+  mix-blend-mode: color-dodge;
+  opacity: 0.6;
+  animation: badgeHoloShift 9s linear infinite;
+}
+
+@keyframes badgeHoloShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 240% 50%; }
+}
+
+/* Layer 4 — specular glint that follows the cursor */
+.badge-glint {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.6), transparent 18%),
+    linear-gradient(112deg, transparent 0 38%, rgba(255, 255, 255, 0.5) 47%, rgba(255, 255, 255, 0.1) 55%, transparent 65%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+/* Layer 5 — fresnel rim highlight */
+.badge-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, transparent 18%, transparent 82%, rgba(255, 255, 255, 0.32) 100%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.35) 0%, transparent 16%);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+/* Layer 6 — micro grain (gives the surface a physical feel) */
+.badge-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.5) 1px, transparent 1.5px),
+    radial-gradient(circle at 75% 75%, rgba(0, 0, 0, 0.4) 1px, transparent 1.5px);
+  background-size: 3px 3px, 3px 3px;
+}
+
+/* Lanyard clip (sits on top of card) */
+.badge-lanyard {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: 72px;
+  height: 30px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
+    rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px) saturate(1.4);
+  -webkit-backdrop-filter: blur(8px) saturate(1.4);
+}
+
+.badge-lanyard__hole {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 7px;
+  background: #060d12;
+  border-radius: 999px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Content layer — text sits on top of all glass layers */
+.badge-content {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 18px;
+  height: 100%;
+  isolation: isolate;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.badge-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+
+.badge-company {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 860;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-company-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  color: #060d12;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+.badge-company-text {
+  display: grid;
+  line-height: 1;
+}
+
+.badge-company-text small {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+.badge-type {
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 4px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+/* Body — avatar + id block */
+.badge-body {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.badge-avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg,
+      rgba(17, 184, 142, 0.85) 0%,
+      rgba(91, 138, 255, 0.7) 50%,
+      rgba(255, 138, 91, 0.85) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 0 0 4px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.badge-avatar__shine {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.55), transparent 36%),
+    radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.2), transparent 40%);
+  pointer-events: none;
+}
+
+.badge-avatar__initials {
+  position: relative;
+  z-index: 1;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.04em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.badge-id {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.badge-name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 860;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.badge-role {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge-dept {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+.badge-dept__label {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  color: var(--ink-dim);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.badge-dept__value {
+  color: var(--ink);
+  font-weight: 750;
+}
+
+/* Foot — metadata grid + barcode */
+.badge-foot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.28);
+}
+
+.badge-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 14px;
+  margin: 0;
+}
+
+.badge-meta__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.badge-meta__row dt {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint);
+}
+
+.badge-meta__row dd {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.badge-meta__value--accent {
+  color: var(--accent) !important;
+}
+
+.badge-barcode {
+  display: flex;
+  align-items: end;
+  gap: 1.5px;
+  height: 30px;
+  padding-bottom: 1px;
+}
+
+.badge-barcode span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  border-radius: 1px;
+  opacity: 0.9;
+}
+
+/* ===== Hint under card ===== */
+.badge-hint {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: var(--ink-ghost);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* ============================================================
+   Accessibility & motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-bg__aurora,
+  .badge-bg__orbs,
+  .badge-bg__stripes,
+  .badge-holo {
+    animation: none;
+  }
+
+  .badge,
+  .badge-home {
+    transition: none;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .badge,
+  .badge-lanyard,
+  .badge-blog,
+  .badge-social {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .badge-liquid,
+  .badge-glint,
+  .badge-holo,
+  .badge-grain {
+    display: none;
+  }
+
+  .badge {
+    background: linear-gradient(160deg, #14242b 0%, #0d161c 100%);
+    border-color: rgba(255, 255, 255, 0.42);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .badge {
+    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .badge-name {
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* ============================================================
+   Browser fallbacks
+   ============================================================ */
+
+/* No backdrop-filter support at all */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .badge {
+    background: linear-gradient(160deg, rgba(20, 36, 43, 0.96), rgba(13, 22, 28, 0.96));
+  }
+
+  .badge-liquid,
+  .badge-holo,
+  .badge-grain {
+    display: none;
+  }
+}
+
+/* backdrop-filter supported but not SVG-in-backdrop-filter (Safari/Firefox) */
+@supports (backdrop-filter: blur(1px)) and (not (backdrop-filter: url(#x))) {
+  .badge-liquid {
+    backdrop-filter: blur(40px) saturate(1.9) brightness(1.06);
+    -webkit-backdrop-filter: blur(40px) saturate(1.9) brightness(1.06);
+  }
+}
+
+/* ============================================================
+   Mobile
+   ============================================================ */
+
+@media (max-width: 520px) {
+  .badge-stage {
+    padding: 18px 12px 16px;
+    gap: 14px;
+  }
+
+  .badge {
+    padding: 24px 22px 18px;
+  }
+
+  .badge-body {
+    grid-template-columns: 72px 1fr;
+    gap: 12px;
+  }
+
+  .badge-avatar {
+    width: 72px;
+    height: 72px;
+  }
+
+  .badge-avatar__initials {
+    font-size: 1.6rem;
+  }
+
+  .badge-name {
+    font-size: 1.25rem;
+  }
+
+  .badge-role {
+    font-size: 0.76rem;
+  }
+
+  .badge-dept {
+    font-size: 0.6rem;
+  }
+
+  .badge-meta__row dd {
+    font-size: 0.64rem;
+  }
+
+  .badge-meta__row dt {
+    font-size: 0.5rem;
+  }
+
+  .badge-barcode {
+    height: 24px;
+  }
+}
+
+@media (max-width: 360px) {
+  .badge-company {
+    font-size: 0.76rem;
+  }
+
+  .badge-type {
+    font-size: 0.5rem;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 521px) {
+  .badge {
+    aspect-ratio: 1 / 1.42;
+  }
+}

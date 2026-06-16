@@ -12,7 +12,7 @@ import {
 import TerminalHome from "./proposals/TerminalHome";
 import DepartureBoard from "./proposals/DepartureBoard";
 import GitGraph from "./proposals/GitGraph";
-import HolographicCard from "./proposals/HolographicCard";
+import EmployeeBadge from "./proposals/EmployeeBadge";
 
 const primaryLink = {
   title: "Blog",
@@ -89,7 +89,7 @@ function App() {
   }
 
   if (path === "/card") {
-    return <HolographicCard />;
+    return <EmployeeBadge />;
   }
 
   return <HomePage navigate={navigate} />;
