@@ -65,8 +65,14 @@ const readmeLines = [
 ];
 
 const motdLines = [
-  "Welcome to denvit-web 6.8.0-browser-sandbox",
-  "Try: help, ls, cat README.md, open blog",
+  {
+    text: "Welcome to denvit-web 6.8.0-browser-sandbox",
+    className: "term-motd-welcome",
+  },
+  {
+    text: "Try: help, ls, cat README.md, open blog",
+    className: "term-motd-hint",
+  },
 ];
 
 const envLines = [
@@ -190,8 +196,7 @@ const bootLines = [
     type: "output",
     text: "Last login: Tue Jun 16 09:14:07 2026 from 127.0.0.1",
   },
-  { type: "command", text: "cat /etc/motd" },
-  ...motdLines.map((text) => ({ type: "output", text })),
+  ...motdLines.map((line) => ({ type: "motd", ...line })),
   { type: "output", text: "Type help to list supported sandbox commands." },
   { type: "command", text: "ls" },
   {
@@ -713,6 +718,7 @@ export default function TerminalHome() {
           await delay(400);
         } else if (
           line.type === "output" ||
+          line.type === "motd" ||
           line.type === "ls" ||
           line.type === "names"
         ) {
@@ -927,6 +933,14 @@ export default function TerminalHome() {
     if (line.type === "output") {
       return (
         <div key={key} className="term-line term-output">
+          {line.text}
+        </div>
+      );
+    }
+
+    if (line.type === "motd") {
+      return (
+        <div key={key} className={`term-line ${line.className}`}>
           {line.text}
         </div>
       );

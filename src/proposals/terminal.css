@@ -117,6 +117,16 @@
   overflow-wrap: anywhere;
 }
 
+.term-motd-welcome {
+  color: var(--term-green);
+  font-weight: 600;
+}
+
+.term-motd-hint {
+  color: var(--term-fg);
+  opacity: 0.85;
+}
+
 .term-history {
   display: flex;
   flex-direction: column;
