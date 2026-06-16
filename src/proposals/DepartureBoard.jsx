@@ -133,7 +133,8 @@ function BoardRow({ link, big = false, delay = 0 }) {
     <a
       href={link.href}
       className={big ? "db-row db-row--big" : "db-row"}
-      aria-label={link.label}
+      aria-label={`Open ${link.title}: ${link.label}`}
+      title={link.label}
     >
       <span className="db-row__icon" aria-hidden="true">
         <Icon size={big ? 22 : 16} />
