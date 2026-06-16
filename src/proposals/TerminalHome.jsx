@@ -66,7 +66,7 @@ const readmeLines = [
 
 const motdLines = [
   "Welcome to denvit-web 6.8.0-browser-sandbox",
-  "Try: help, ls -la, cat README.md, open blog",
+  "Try: help, ls, cat README.md, open blog",
 ];
 
 const envLines = [
@@ -190,19 +190,13 @@ const bootLines = [
     type: "output",
     text: "Last login: Tue Jun 16 09:14:07 2026 from 127.0.0.1",
   },
-  { type: "command", text: "uname -a" },
-  {
-    type: "output",
-    text: "Linux denvit-web 6.8.0-browser-sandbox #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux",
-  },
   { type: "command", text: "cat /etc/motd" },
   ...motdLines.map((text) => ({ type: "output", text })),
   { type: "output", text: "Type help to list supported sandbox commands." },
-  { type: "command", text: "ls -la" },
+  { type: "command", text: "ls" },
   {
-    type: "ls",
-    total: directories.home.total,
-    rows: directories.home.entries,
+    type: "names",
+    items: directories.home.entries.filter((entry) => !entry.hidden),
   },
 ];
 
