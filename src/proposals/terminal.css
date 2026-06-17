@@ -26,7 +26,7 @@
   color: var(--term-fg);
   font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono",
     "Courier New", monospace;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.55;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
@@ -118,13 +118,12 @@
 }
 
 .term-motd-welcome {
-  color: var(--term-green);
+  color: var(--term-blue);
   font-weight: 600;
 }
 
 .term-motd-hint {
-  color: var(--term-fg);
-  opacity: 0.85;
+  color: var(--term-muted);
 }
 
 .term-history {
@@ -259,7 +258,32 @@
 
 .term-name-dir {
   color: var(--term-green);
+  font: inherit;
   font-weight: 500;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.term-name-dir:hover,
+.term-name-dir:focus-visible {
+  color: #7da86b;
+  text-decoration-color: #7da86b;
+}
+
+.term-name-dir:focus-visible {
+  box-shadow: 0 0 0 2px var(--term-bg), 0 0 0 4px var(--term-green);
+  border-radius: 2px;
+  outline: none;
 }
 
 .term-name-link-symlink {
@@ -409,7 +433,7 @@
 
 @media (max-width: 640px) {
   .term-shell {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .term-screen {

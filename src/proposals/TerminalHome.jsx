@@ -9,7 +9,17 @@ const prefersReducedMotion =
 const BLOG_URL = "https://blog.denv.it";
 const CWD = "/home/denvit";
 const HOSTNAME = "denvit-web";
-const PROMPT = `denvit@${HOSTNAME}:~$`;
+
+function getCwdPath(currentDir) {
+  return currentDir === "social" ? `${CWD}/social` : CWD;
+}
+
+function getPrompt(currentDir) {
+  const path = currentDir === "social" ? "~/social" : "~";
+  return `denvit@${HOSTNAME}:${path}$`;
+}
+
+const PROMPT = getPrompt("home");
 
 const socialLinks = [
   {
@@ -66,7 +76,7 @@ const readmeLines = [
 
 const motdLines = [
   {
-    text: "Welcome to denvit-web 6.8.0-browser-sandbox",
+    text: "Welcome to denvit-web",
     className: "term-motd-welcome",
   },
   {
@@ -222,9 +232,13 @@ const normalizeLookup = (value) =>
 const normalizeUrl = (value) =>
   value.trim().replace(/\/+$/, "").toLowerCase();
 
-const result = (output, openHref = "") => ({ output, openHref });
+const result = (output, openHref = "", newDir = "") => ({
+  output,
+  openHref,
+  newDir,
+});
 
-function resolveDirectory(path = "") {
+function resolveDirectory(path = "", currentDir = "home") {
   const normalized = normalizeLookup(path || ".");
 
   if (
@@ -244,10 +258,14 @@ function resolveDirectory(path = "") {
     return "social";
   }
 
+  if (normalized === "..") {
+    return currentDir === "social" ? "home" : "";
+  }
+
   return "";
 }
 
-function normalizeHomePath(path = "") {
+function normalizeHomePath(path = "", currentDir = "home") {
   const normalized = normalizeLookup(path || ".");
 
   if (normalized.startsWith(`${CWD.toLowerCase()}/`)) {
@@ -262,18 +280,23 @@ function normalizeHomePath(path = "") {
     return normalized.slice(2);
   }
 
+  if (normalized === ".." && currentDir === "social") {
+    return "";
+  }
+
   return normalized;
 }
 
-function findDirectoryEntry(path = "") {
-  const normalized = normalizeHomePath(path);
+function findDirectoryEntry(path = "", currentDir = "home") {
+  const normalized = normalizeHomePath(path, currentDir);
+  const entries = currentDir === "social" ? socialEntries : rootEntries;
 
   if (!normalized || normalized.includes("/")) {
     return null;
   }
 
   return (
-    rootEntries.find((entry) => {
+    entries.find((entry) => {
       if (entry.hidden) return false;
       const names = [
         entry.shortName,
@@ -289,7 +312,7 @@ function isReadmePath(path) {
   return readmeAliases.has(normalizeLookup(path));
 }
 
-function listDirectory(args) {
+function listDirectory(args, currentDir = "home") {
   let showAll = false;
   let longFormat = false;
   let targetPath = "";
@@ -323,10 +346,10 @@ function listDirectory(args) {
     }
   }
 
-  const directoryKey = resolveDirectory(targetPath);
+  const directoryKey = resolveDirectory(targetPath, currentDir);
 
   if (!directoryKey && targetPath) {
-    const entry = findDirectoryEntry(targetPath);
+    const entry = findDirectoryEntry(targetPath, currentDir);
 
     if (entry) {
       if (longFormat) {
@@ -429,7 +452,7 @@ function readLocalFile(args) {
   const path = normalizeLookup(args[0]);
 
   if (path === "/etc/motd" || path === "motd") {
-    return result(motdLines.map((text) => ({ type: "output", text })));
+    return result(motdLines.map((line) => ({ type: "motd", ...line })));
   }
 
   return readReadme(args);
@@ -510,6 +533,7 @@ function supportedCommands() {
     { type: "output", text: "  uname [-a]                   print simulated kernel info" },
     { type: "output", text: "  date                         print this device's local time" },
     { type: "output", text: "  pwd                          print the current directory" },
+    { type: "output", text: "  cd [~|social|..]             change the simulated directory" },
     { type: "output", text: "  env                          print simulated environment" },
     { type: "output", text: "  echo [text]                  print text back" },
     { type: "output", text: "  ls [-la] [~/social]          list local sandbox files" },
@@ -544,7 +568,7 @@ function formatDeviceDate(date) {
   });
 }
 
-function runCommand(command, history) {
+function runCommand(command, history, currentDir = "home") {
   const parts = command.split(/\s+/);
   const verb = parts[0].toLowerCase();
   const args = parts.slice(1);
@@ -595,11 +619,30 @@ function runCommand(command, history) {
   }
 
   if (verb === "pwd") {
-    return result([{ type: "output", text: CWD }]);
+    return result([{ type: "output", text: getCwdPath(currentDir) }]);
+  }
+
+  if (verb === "cd") {
+    const target = args[0] || "~";
+    const newDir = resolveDirectory(target, currentDir);
+
+    if (!newDir) {
+      return result([
+        {
+          type: "error",
+          text: `cd: ${target}: No such file or directory`,
+        },
+      ]);
+    }
+
+    return result([], "", newDir);
   }
 
   if (verb === "env" || verb === "printenv") {
-    return result(envLines.map((text) => ({ type: "output", text })));
+    const lines = envLines.map((line) =>
+      line.startsWith("PWD=") ? `PWD=${getCwdPath(currentDir)}` : line
+    );
+    return result(lines.map((text) => ({ type: "output", text })));
   }
 
   if (verb === "echo") {
@@ -607,7 +650,7 @@ function runCommand(command, history) {
   }
 
   if (verb === "ls") {
-    return listDirectory(args);
+    return listDirectory(args, currentDir);
   }
 
   if (verb === "cat") {
@@ -683,6 +726,8 @@ export default function TerminalHome() {
   const [sessions, setSessions] = useState([]);
   const [commandHistory, setCommandHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(null);
+  const [currentDir, setCurrentDir] = useState("home");
+  const [autoCommand, setAutoCommand] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const timeoutsRef = useRef([]);
@@ -747,7 +792,38 @@ export default function TerminalHome() {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [visibleCount, typedText, sessions, isReady]);
+  }, [visibleCount, typedText, sessions, isReady, currentDir]);
+
+  useEffect(() => {
+    if (!autoCommand || !isReady) return;
+
+    let cancelled = false;
+    const t = timeoutsRef.current;
+
+    const delay = (ms) =>
+      new Promise((resolve) => {
+        const id = setTimeout(resolve, ms);
+        t.push(id);
+      });
+
+    const type = async () => {
+      setInputValue("");
+      for (let i = 0; i <= autoCommand.length; i++) {
+        if (cancelled) return;
+        setInputValue(autoCommand.slice(0, i));
+        await delay(35);
+      }
+      if (cancelled) return;
+      submitCommand(autoCommand);
+      setAutoCommand(null);
+    };
+
+    type();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoCommand, isReady]);
 
   const focusInput = () => {
     if (isReady && inputRef.current) {
@@ -756,38 +832,43 @@ export default function TerminalHome() {
   };
 
   const handleShellClick = (event) => {
-    if (event.target instanceof Element && event.target.closest("a, input")) {
+    if (event.target instanceof Element && event.target.closest("a, input, button")) {
       return;
     }
 
     focusInput();
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const submitCommand = (command) => {
+    const normalized = command.trim().replace(/\s+/g, " ");
+    if (!normalized) return;
 
-    const command = inputValue.trim().replace(/\s+/g, " ");
-    if (!command) return;
-
-    const nextHistory = [...commandHistory, command];
-    const lowerCommand = command.toLowerCase();
+    const nextHistory = [...commandHistory, normalized];
 
     setInputValue("");
     setHistoryIndex(null);
     setCommandHistory(nextHistory);
 
-    if (lowerCommand === "clear") {
+    if (normalized.toLowerCase() === "clear") {
       setSessions([]);
       return;
     }
 
-    const { output, openHref } = runCommand(command, nextHistory);
+    const { output, openHref, newDir } = runCommand(
+      normalized,
+      nextHistory,
+      currentDir
+    );
+
+    if (newDir) {
+      setCurrentDir(newDir);
+    }
 
     setSessions((current) => [
       ...current,
       {
         id: sessionIdRef.current++,
-        command,
+        command: normalized,
         output,
       },
     ]);
@@ -795,6 +876,11 @@ export default function TerminalHome() {
     if (openHref && typeof window !== "undefined") {
       window.open(openHref, "_blank", "noopener,noreferrer");
     }
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    submitCommand(inputValue);
   };
 
   const handleInputKeyDown = (event) => {
@@ -835,7 +921,8 @@ export default function TerminalHome() {
   );
 
   const renderPrompt = () => {
-    const [userHost, pathAndDollar] = PROMPT.split(":");
+    const prompt = getPrompt(currentDir);
+    const [userHost, pathAndDollar] = prompt.split(":");
     const path = pathAndDollar.slice(0, -1);
     const dollar = pathAndDollar.slice(-1);
 
@@ -917,6 +1004,20 @@ export default function TerminalHome() {
             >
               {name}
             </a>
+          );
+        }
+
+        if (isDirectory(item) && item.shortName !== "." && item.shortName !== "..") {
+          return (
+            <button
+              key={item.name}
+              type="button"
+              className={entryNameClass(item)}
+              onClick={() => setAutoCommand(`cd ${item.shortName}`)}
+              aria-label={`Open ${item.shortName} directory`}
+            >
+              {name}
+            </button>
           );
         }
 
