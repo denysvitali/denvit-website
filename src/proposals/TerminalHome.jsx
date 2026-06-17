@@ -202,10 +202,6 @@ const directories = {
 };
 
 const bootLines = [
-  {
-    type: "output",
-    text: "Last login: Tue Jun 16 09:14:07 2026 from 127.0.0.1",
-  },
   ...motdLines.map((line) => ({ type: "motd", ...line })),
   { type: "output", text: "Type help to list supported sandbox commands." },
   { type: "command", text: "ls" },
