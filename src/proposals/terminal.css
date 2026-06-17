@@ -1,5 +1,5 @@
 :root {
-  /* Darcula-inspired terminal palette */
+  /* Defaults are set by JS from themes in constants.js */
   --term-bg: #2b2b2b;
   --term-bg-elevated: #313335;
   --term-fg: #a9b7c6;
@@ -14,6 +14,8 @@
   --term-selection: #214283;
   --term-border: #555555;
   --term-cursor: #bbbbbb;
+  --term-glow: rgba(88, 157, 246, 0.08);
+  --term-frame: #3c3f41;
 }
 
 .term-shell {
@@ -32,7 +34,6 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle vignette only — no heavy scanlines */
 .term-crt {
   position: absolute;
   inset: 0;
@@ -62,18 +63,118 @@
   opacity: 0.25;
 }
 
-.term-screen {
+.term-matrix {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.term-window {
   position: relative;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  max-width: 1100px;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px var(--term-frame),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 80px var(--term-glow);
+  background: var(--term-bg-elevated);
+  overflow: hidden;
+}
+
+.term-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--term-frame);
+  border-bottom: 1px solid var(--term-border);
+  user-select: none;
+}
+
+.term-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.term-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.65);
+  opacity: 0.9;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.term-light svg {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.term-light:hover svg,
+.term-light:focus-visible svg {
+  opacity: 1;
+}
+
+.term-light:hover,
+.term-light:focus-visible {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.term-light-close {
+  background: #ff5f57;
+}
+
+.term-light-minimize {
+  background: #febc2e;
+}
+
+.term-light-maximize {
+  background: #28c840;
+}
+
+.term-title {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: var(--term-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.term-title-spacer {
+  width: 60px;
+}
+
+.term-screen {
+  flex: 1;
+  position: relative;
+  width: 100%;
   overflow-y: auto;
-  padding: 1.75rem 1.5rem 3rem;
+  padding: 1.25rem 1.5rem 1rem;
   box-sizing: border-box;
 }
 
 .term-content {
-  width: min(100%, 820px);
+  width: min(100%, 860px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -111,40 +212,55 @@
   overflow-wrap: anywhere;
 }
 
-/* Inline-style segments rendered inside .term-output (used by `cat README.md`
-   and friends so plain text files can carry color + bold). */
+.term-kernel {
+  color: var(--term-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.92em;
+}
+
 .term-r-bold {
   font-weight: 700;
 }
+
 .term-r-italic {
   font-style: italic;
 }
+
 .term-r-underline {
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-thickness: 1px;
 }
+
 .term-r-fg {
   color: var(--term-fg);
 }
+
 .term-r-muted {
   color: var(--term-muted);
 }
+
 .term-r-blue {
   color: var(--term-blue);
 }
+
 .term-r-green {
   color: var(--term-green);
 }
+
 .term-r-yellow {
   color: var(--term-yellow);
 }
+
 .term-r-purple {
   color: var(--term-purple);
 }
+
 .term-r-red {
   color: var(--term-red);
 }
+
 .term-r-orange {
   color: var(--term-orange);
 }
@@ -219,7 +335,11 @@
 
 .term-link:focus-visible,
 .term-name-link:focus-visible,
-.term-ls-link:focus-visible {
+.term-ls-link:focus-visible,
+.term-completion:focus-visible,
+.term-name-dir:focus-visible,
+.term-name-file:focus-visible,
+.term-ls-file:focus-visible {
   box-shadow: 0 0 0 2px var(--term-bg), 0 0 0 4px var(--term-blue);
   border-radius: 2px;
 }
@@ -324,7 +444,6 @@
   outline: none;
 }
 
-/* Clickable plain-file entries — auto-type `cat <name>`. */
 .term-name-file {
   color: var(--term-fg);
   font: inherit;
@@ -355,8 +474,6 @@
   outline: none;
 }
 
-/* `ls -l` view: clickable plain-file name cell. Inherits the same look
-   as a regular file entry but lives inside a row layout. */
 .term-ls-file {
   color: var(--term-fg);
   font: inherit;
@@ -454,10 +571,67 @@
   min-height: 1.55em;
 }
 
+.term-completions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem;
+  border-radius: 4px;
+  background: var(--term-bg-elevated);
+  border: 1px solid var(--term-border);
+}
+
+.term-completion {
+  font: inherit;
+  font-size: 0.95em;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--term-fg);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.term-completion:hover,
+.term-completion-active {
+  background: rgba(88, 157, 246, 0.15);
+  border-color: rgba(88, 157, 246, 0.4);
+}
+
+.term-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.35rem 0.85rem;
+  background: var(--term-frame);
+  border-top: 1px solid var(--term-border);
+  color: var(--term-muted);
+  font-size: 12px;
+  user-select: none;
+}
+
+.term-status-user {
+  color: var(--term-orange);
+}
+
+.term-status-dir {
+  color: var(--term-green);
+}
+
+.term-status-theme {
+  margin-left: auto;
+  color: var(--term-blue);
+}
+
+.term-status-time {
+  color: var(--term-muted);
+}
+
 .term-input::selection,
 .term-command-text::selection,
-.term-output::selection,
-.term-error::selection {
+.term-output::selection {
   background: var(--term-selection);
 }
 
@@ -529,7 +703,9 @@
   .term-link,
   .term-name-link,
   .term-ls-link,
-  .term-input-form {
+  .term-input-form,
+  .term-completion,
+  .term-light {
     transition: none;
   }
 }
@@ -539,9 +715,24 @@
     font-size: 13px;
   }
 
+  .term-window {
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .term-titlebar {
+    padding: 0.45rem 0.65rem;
+  }
+
+  .term-title-spacer {
+    display: none;
+  }
+
   .term-screen {
     padding: max(1rem, env(safe-area-inset-top)) 0.85rem
-      max(1.5rem, env(safe-area-inset-bottom));
+      max(1rem, env(safe-area-inset-bottom));
   }
 
   .term-content {
@@ -559,12 +750,18 @@
   }
 
   .term-input {
-    /* Keep matching the surrounding shell font-size so typed characters
-       don't jump in size during the auto-typing animation. iOS Safari
-       may briefly zoom the viewport on focus; that trade-off is worth
-       it for visual consistency. */
     font-size: inherit;
     line-height: 1.45;
+  }
+
+  .term-statusbar {
+    gap: 0.6rem;
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+
+  .term-status-time {
+    display: none;
   }
 }
 

@@ -1,758 +1,201 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, ExternalLink } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Maximize2, Minus, X } from "lucide-react";
+import {
+  HOSTNAME,
+  USER,
+  defaultTheme,
+  prefersReducedMotion,
+  themes,
+} from "./terminal/constants.js";
+import {
+  directories,
+  entryNameClass,
+  fileContents,
+  findDirectoryEntry,
+  formatEntryName,
+  isDirectory,
+  isReadmePath,
+  isSymlink,
+  motdLines,
+} from "./terminal/fs.js";
+import { getCompletions, runCommand } from "./terminal/commands.js";
+import { formatDeviceDate, getPrompt } from "./terminal/utils.js";
 import "./terminal.css";
 
-const prefersReducedMotion =
-  typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const HISTORY_KEY = "denvit-terminal-history";
+const THEME_KEY = "denvit-terminal-theme";
 
-const BLOG_URL = "https://blog.denv.it";
-const CWD = "/home/denvit";
-const HOSTNAME = "denvit-web";
-
-function getCwdPath(currentDir) {
-  return currentDir === "social" ? `${CWD}/social` : CWD;
+if (typeof window !== "undefined" && !window.__DENVIT_BOOT_TIME__) {
+  window.__DENVIT_BOOT_TIME__ = Date.now();
 }
-
-function getPrompt(currentDir) {
-  const path = currentDir === "social" ? "~/social" : "~";
-  return `denvit@${HOSTNAME}:${path}$`;
-}
-
-const PROMPT = getPrompt("home");
-
-const socialLinks = [
-  {
-    command: "github",
-    label: "GitHub",
-    href: "https://github.com/denysvitali",
-    aliases: ["gh"],
-  },
-  {
-    command: "linkedin",
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/in/denysvitali",
-    aliases: ["in"],
-  },
-  {
-    command: "telegram",
-    label: "Telegram",
-    href: "https://t.me/denvit",
-    aliases: ["tg"],
-  },
-  {
-    command: "instagram",
-    label: "Instagram",
-    href: "https://instagram.com/denvit",
-    aliases: ["ig"],
-  },
-  {
-    command: "x",
-    label: "X",
-    href: "https://x.com/DenysVitali",
-    aliases: ["twitter", "tw"],
-  },
-];
-
-const openTargets = [
-  {
-    command: "blog",
-    label: "blog",
-    href: BLOG_URL,
-    aliases: ["weblog", BLOG_URL],
-  },
-  ...socialLinks,
-];
-
-const readmeLines = [
-  [
-    { text: "Denys Vitali", className: "term-r-bold term-r-blue" },
-  ],
-  [
-    {
-      text: "Software systems, reverse engineering, Go, Kubernetes, security, automation.",
-      className: "term-r-fg",
-    },
-  ],
-  "",
-  [
-    { text: "Primary link: ", className: "term-r-bold term-r-green" },
-    { text: BLOG_URL, className: "term-r-blue term-r-underline" },
-  ],
-  [
-    { text: "Social links live in ", className: "term-r-fg" },
-    { text: "~/social", className: "term-r-blue" },
-    { text: ". Try: ", className: "term-r-fg" },
-    { text: "ls -la ~/social", className: "term-r-yellow term-r-bold" },
-  ],
-  "",
-  [
-    {
-      text: "This terminal is a local browser sandbox. ",
-      className: "term-r-fg",
-    },
-    {
-      text: "A real Linux/WASM lab could fit here later.",
-      className: "term-r-muted term-r-italic",
-    },
-  ],
-  "",
-  [
-    { text: "▸ ", className: "term-r-green term-r-bold" },
-    { text: "Try: ", className: "term-r-fg" },
-    { text: "help", className: "term-r-yellow term-r-bold" },
-    { text: "  ", className: "term-r-fg" },
-    { text: "open blog", className: "term-r-yellow term-r-bold" },
-    { text: "  ", className: "term-r-fg" },
-    { text: "open x", className: "term-r-yellow term-r-bold" },
-  ],
-];
-
-const motdLines = [
-  {
-    text: "Welcome to denvit-web",
-    className: "term-motd-welcome",
-  },
-  {
-    text: "Try: help, ls, cat README.md, open blog",
-    className: "term-motd-hint",
-  },
-];
-
-const envLines = [
-  "HOME=/home/denvit",
-  "HOSTNAME=denvit-web",
-  "LANG=C.UTF-8",
-  "PATH=/usr/local/bin:/usr/bin:/bin",
-  "PWD=/home/denvit",
-  "SHELL=/bin/browser-sh",
-  "TERM=xterm-256color",
-  "USER=denvit",
-];
-
-const rootEntries = [
-  {
-    mode: "drwxr-xr-x",
-    links: "5",
-    owner: "denvit",
-    group: "denvit",
-    size: "4096",
-    date: "Jun 16 09:15",
-    name: ".",
-    shortName: ".",
-    hidden: true,
-  },
-  {
-    mode: "drwxr-xr-x",
-    links: "3",
-    owner: "root",
-    group: "root",
-    size: "4096",
-    date: "Jun 15 18:40",
-    name: "..",
-    shortName: "..",
-    hidden: true,
-  },
-  {
-    mode: "-rw-r--r--",
-    links: "1",
-    owner: "denvit",
-    group: "denvit",
-    size: "276",
-    date: "Jun 16 09:16",
-    name: "README.md",
-    shortName: "README.md",
-  },
-  {
-    mode: "lrwxrwxrwx",
-    links: "1",
-    owner: "denvit",
-    group: "denvit",
-    size: String(BLOG_URL.length),
-    date: "Jun 16 09:16",
-    name: `blog -> ${BLOG_URL}`,
-    shortName: "blog",
-    href: BLOG_URL,
-    label: "blog",
-  },
-  {
-    mode: "drwxr-xr-x",
-    links: "2",
-    owner: "denvit",
-    group: "denvit",
-    size: "4096",
-    date: "Jun 16 09:17",
-    name: "social",
-    shortName: "social",
-  },
-];
-
-const socialEntries = [
-  {
-    mode: "drwxr-xr-x",
-    links: "2",
-    owner: "denvit",
-    group: "denvit",
-    size: "4096",
-    date: "Jun 16 09:17",
-    name: ".",
-    shortName: ".",
-    hidden: true,
-  },
-  {
-    mode: "drwxr-xr-x",
-    links: "5",
-    owner: "denvit",
-    group: "denvit",
-    size: "4096",
-    date: "Jun 16 09:15",
-    name: "..",
-    shortName: "..",
-    hidden: true,
-  },
-  ...socialLinks.map((link) => ({
-    mode: "lrwxrwxrwx",
-    links: "1",
-    owner: "denvit",
-    group: "denvit",
-    size: String(link.href.length),
-    date: "Jun 16 09:18",
-    name: `${link.command} -> ${link.href}`,
-    shortName: link.command,
-    href: link.href,
-    label: link.label,
-  })),
-];
-
-const directories = {
-  home: {
-    total: "20",
-    entries: rootEntries,
-  },
-  social: {
-    total: "32",
-    entries: socialEntries,
-  },
-};
 
 const bootLines = [
+  { type: "kernel", text: "[    0.000000] Linux version 6.8.0-browser-sandbox" },
+  { type: "kernel", text: "[    0.000123] Command line: init=/bin/browser-sh quiet splash" },
+  { type: "kernel", text: "[    0.000456] x86/cpu: VMX (outside TXT) disabled by BIOS" },
+  { type: "kernel", text: "[    0.000789] browser-sh: mounting pseudo-root at /home/denvit" },
   ...motdLines.map((line) => ({ type: "motd", ...line })),
   { type: "output", text: "Type help to list supported sandbox commands." },
-  { type: "command", text: "ls" },
+  { type: "command", text: "neofetch" },
   {
-    type: "names",
-    items: directories.home.entries.filter((entry) => !entry.hidden),
+    type: "output",
+    segments: [
+      { text: "       _.---._", className: "term-r-fg" },
+    ],
   },
+  {
+    type: "output",
+    segments: [
+      { text: "     .'       '.", className: "term-r-fg" },
+    ],
+  },
+  {
+    type: "output",
+    segments: [
+      { text: "    /   .   .   \\   ", className: "term-r-fg" },
+      { text: `${USER}@${HOSTNAME}`, className: "term-r-bold term-r-blue" },
+    ],
+  },
+  {
+    type: "output",
+    segments: [
+      { text: "   |    \\___/    |  ", className: "term-r-fg" },
+      { text: "----------------", className: "term-r-muted" },
+    ],
+  },
+  {
+    type: "output",
+    segments: [
+      { text: "    \\            /   ", className: "term-r-fg" },
+      { text: "OS: BrowserOS 1.0", className: "term-r-fg" },
+    ],
+  },
+  {
+    type: "output",
+    segments: [
+      { text: "     '.        .'    ", className: "term-r-fg" },
+      { text: "Shell: browser-sh", className: "term-r-fg" },
+    ],
+  },
+  {
+    type: "output",
+    segments: [
+      { text: "       `'---'`      ", className: "term-r-fg" },
+      { text: "Theme: darcula", className: "term-r-fg" },
+    ],
+  },
+  { type: "command", text: "ls" },
+  { type: "names", items: directories.home.entries.filter((entry) => !entry.hidden) },
 ];
 
-const readmeAliases = new Set([
-  "readme",
-  "readme.md",
-  "./readme",
-  "./readme.md",
-  "~/readme",
-  "~/readme.md",
-  "/home/denvit/readme",
-  "/home/denvit/readme.md",
-]);
-
-const normalizeLookup = (value) =>
-  value.trim().replace(/\/+$/, "").toLowerCase();
-
-const normalizeUrl = (value) =>
-  value.trim().replace(/\/+$/, "").toLowerCase();
-
-const result = (output, openHref = "", newDir = "") => ({
-  output,
-  openHref,
-  newDir,
-});
-
-function resolveDirectory(path = "", currentDir = "home") {
-  const normalized = normalizeLookup(path || ".");
-
-  if (normalized === ".") {
-    return currentDir;
+function loadHistory() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
   }
-
-  if (
-    normalized === "~" ||
-    normalized === CWD.toLowerCase()
-  ) {
-    return "home";
-  }
-
-  if (
-    normalized === "social" ||
-    normalized === "./social" ||
-    normalized === "~/social" ||
-    normalized === `${CWD.toLowerCase()}/social`
-  ) {
-    return "social";
-  }
-
-  if (normalized === "..") {
-    return currentDir === "social" ? "home" : "";
-  }
-
-  return "";
 }
 
-function normalizeHomePath(path = "", currentDir = "home") {
-  const normalized = normalizeLookup(path || ".");
-
-  if (normalized.startsWith(`${CWD.toLowerCase()}/`)) {
-    return normalized.slice(CWD.length + 1);
+function saveHistory(history) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-500)));
+  } catch {
+    // ignore quota errors
   }
-
-  if (normalized.startsWith("~/")) {
-    return normalized.slice(2);
-  }
-
-  if (normalized.startsWith("./")) {
-    return normalized.slice(2);
-  }
-
-  if (normalized === ".." && currentDir === "social") {
-    return "";
-  }
-
-  return normalized;
 }
 
-function findDirectoryEntry(path = "", currentDir = "home") {
-  const normalized = normalizeHomePath(path, currentDir);
-  const entries = currentDir === "social" ? socialEntries : rootEntries;
-
-  if (!normalized || normalized.includes("/")) {
-    return null;
+function loadTheme() {
+  if (typeof window === "undefined") return defaultTheme;
+  try {
+    const stored = window.localStorage.getItem(THEME_KEY);
+    return themes[stored] ? stored : defaultTheme;
+  } catch {
+    return defaultTheme;
   }
-
-  return (
-    entries.find((entry) => {
-      if (entry.hidden) return false;
-      const names = [
-        entry.shortName,
-        entry.name,
-        formatEntryName(entry).replace(/[\/@]$/, ""),
-      ].filter(Boolean);
-      return names.some((name) => normalizeLookup(name) === normalized);
-    }) || null
-  );
 }
 
-function isReadmePath(path) {
-  return readmeAliases.has(normalizeLookup(path));
+function saveTheme(theme) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // ignore
+  }
 }
 
-function listDirectory(args, currentDir = "home") {
-  let showAll = false;
-  let longFormat = false;
-  let targetPath = "";
+function MatrixRain({ active, theme }) {
+  const canvasRef = useRef(null);
+  const rafRef = useRef(null);
+  const dropsRef = useRef([]);
 
-  for (const arg of args) {
-    if (arg.startsWith("-") && arg.length > 1) {
-      for (const flag of arg.slice(1)) {
-        if (flag === "a") {
-          showAll = true;
-        } else if (flag === "l") {
-          longFormat = true;
+  useEffect(() => {
+    if (!active) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const columns = Math.floor(canvas.width / 14);
+      dropsRef.current = Array.from({ length: columns }, () =>
+        Math.floor(Math.random() * -100)
+      );
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
+    const isLight = theme === "paperwhite";
+
+    const draw = () => {
+      ctx.fillStyle = isLight
+        ? "rgba(245, 242, 232, 0.12)"
+        : "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = isLight ? "#1565c0" : "#33ff33";
+      ctx.font = "14px monospace";
+
+      dropsRef.current.forEach((y, i) => {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * 14;
+        ctx.fillText(text, x, y * 14);
+
+        if (y * 14 > canvas.height && Math.random() > 0.975) {
+          dropsRef.current[i] = 0;
         } else {
-          return result([
-            {
-              type: "error",
-              text: `ls: invalid option -- '${flag}'`,
-            },
-            { type: "output", text: "Try: ls -la ~/social" },
-          ]);
+          dropsRef.current[i] = y + 1;
         }
-      }
-    } else if (!targetPath) {
-      targetPath = arg;
-    } else {
-      return result([
-        {
-          type: "error",
-          text: "ls: multiple paths are not supported in this sandbox",
-        },
-      ]);
-    }
-  }
+      });
 
-  const directoryKey = resolveDirectory(targetPath, currentDir);
+      rafRef.current = requestAnimationFrame(draw);
+    };
 
-  if (!directoryKey && targetPath) {
-    const entry = findDirectoryEntry(targetPath, currentDir);
+    draw();
 
-    if (entry) {
-      if (longFormat) {
-        return result([
-          {
-            type: "ls",
-            total: "",
-            rows: [entry],
-          },
-        ]);
-      }
+    return () => {
+      window.removeEventListener("resize", resize);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [active, theme]);
 
-      return result([
-        {
-          type: "names",
-          items: [entry],
-        },
-      ]);
-    }
-  }
-
-  if (!directoryKey) {
-    return result([
-      {
-        type: "error",
-        text: `ls: cannot access '${targetPath}': No such file or directory`,
-      },
-    ]);
-  }
-
-  const directory = directories[directoryKey];
-  const entries = showAll
-    ? directory.entries
-    : directory.entries.filter((entry) => !entry.hidden);
-
-  if (longFormat) {
-    return result([
-      {
-        type: "ls",
-        total: directory.total,
-        rows: entries,
-      },
-    ]);
-  }
-
-  return result([
-    {
-      type: "names",
-      items: entries,
-    },
-  ]);
-}
-
-function readReadme(args) {
-  if (args.length === 0) {
-    return result([
-      { type: "error", text: "cat: missing operand" },
-      { type: "output", text: "Try: cat README.md" },
-    ]);
-  }
-
-  if (args.length > 1) {
-    return result([
-      {
-        type: "error",
-        text: "cat: multiple files are not supported in this sandbox",
-      },
-    ]);
-  }
-
-  if (!isReadmePath(args[0])) {
-    return result([
-      {
-        type: "error",
-        text: `cat: ${args[0]}: No such file or directory`,
-      },
-    ]);
-  }
-
-  return result(readmeLines.map((line) => {
-    if (typeof line === "string") {
-      return { type: "output", text: line };
-    }
-    return { type: "output", segments: line };
-  }));
-}
-
-function readLocalFile(args) {
-  if (args.length === 0) {
-    return result([
-      { type: "error", text: "cat: missing operand" },
-      { type: "output", text: "Try: cat README.md or cat /etc/motd" },
-    ]);
-  }
-
-  if (args.length > 1) {
-    return result([
-      {
-        type: "error",
-        text: "cat: multiple files are not supported in this sandbox",
-      },
-    ]);
-  }
-
-  const path = normalizeLookup(args[0]);
-
-  if (path === "/etc/motd" || path === "motd") {
-    return result(motdLines.map((line) => ({ type: "motd", ...line })));
-  }
-
-  return readReadme(args);
-}
-
-function findOpenTarget(args) {
-  const rawTarget = args.join(" ");
-  const normalized = normalizeUrl(rawTarget);
-
-  return openTargets.find((target) => {
-    const aliases = [target.command, target.href, ...(target.aliases || [])];
-    return aliases.some((alias) => normalizeUrl(alias) === normalized);
-  });
-}
-
-function openKnownTarget(args) {
-  if (args.length === 0) {
-    return result([
-      { type: "error", text: "open: missing target" },
-      { type: "output", text: "Try: open blog or open github" },
-    ]);
-  }
-
-  const normalized = normalizeLookup(args.join(" "));
-
-  if (
-    normalized === "social" ||
-    normalized === "links" ||
-    normalized === "~/social"
-  ) {
-    return result([
-      { type: "output", text: "Known social links:" },
-      ...socialLinks.map((link) => ({
-        type: "link",
-        text: `${link.command}: ${link.href}`,
-        href: link.href,
-        label: `Open ${link.label}`,
-      })),
-    ]);
-  }
-
-  const target = findOpenTarget(args);
-
-  if (!target) {
-    return result([
-      {
-        type: "error",
-        text: `open: '${args.join(" ")}' is outside this sandbox`,
-      },
-      {
-        type: "output",
-        text: "Supported targets: blog, github, linkedin, telegram, instagram, x",
-      },
-    ]);
-  }
-
-  return result(
-    [
-      { type: "output", text: `Opening ${target.label}...` },
-      {
-        type: "link",
-        text: target.href,
-        href: target.href,
-        label: `Open ${target.label}`,
-      },
-    ],
-    target.href
+  if (!active) return null;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="term-matrix"
+      aria-hidden="true"
+    />
   );
-}
-
-function supportedCommands() {
-  return result([
-    { type: "output", text: "Supported local sandbox commands:" },
-    { type: "output", text: "  help                         show this list" },
-    { type: "output", text: "  whoami                       print the sandbox user" },
-    { type: "output", text: "  hostname                     print the sandbox host" },
-    { type: "output", text: "  id                           print simulated uid/gid data" },
-    { type: "output", text: "  uname [-a]                   print simulated kernel info" },
-    { type: "output", text: "  date                         print this device's local time" },
-    { type: "output", text: "  pwd                          print the current directory" },
-    { type: "output", text: "  cd [~|social|..]             change the simulated directory" },
-    { type: "output", text: "  env                          print simulated environment" },
-    { type: "output", text: "  echo [text]                  print text back" },
-    { type: "output", text: "  ls [-la] [~/social]          list local sandbox files" },
-    { type: "output", text: "  cat README.md or /etc/motd   read local sandbox files" },
-    { type: "output", text: "  readme                       same as cat README.md" },
-    { type: "output", text: "  open blog|github|linkedin    open a known external link" },
-    { type: "output", text: "  open social                  show all known social links" },
-    { type: "output", text: "  history                      show command history" },
-    { type: "output", text: "  clear                        clear interactive output" },
-  ]);
-}
-
-function commandHistoryOutput(history) {
-  return result(
-    history.map((command, index) => ({
-      type: "output",
-      text: `${String(index + 1).padStart(2, " ")}  ${command}`,
-    }))
-  );
-}
-
-function formatDeviceDate(date) {
-  return date.toLocaleString(undefined, {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
-function runCommand(command, history, currentDir = "home") {
-  const parts = command.split(/\s+/);
-  const verb = parts[0].toLowerCase();
-  const args = parts.slice(1);
-
-  if (verb === "help") {
-    return supportedCommands();
-  }
-
-  if (verb === "whoami") {
-    return result([{ type: "output", text: "denvit" }]);
-  }
-
-  if (verb === "hostname") {
-    return result([{ type: "output", text: HOSTNAME }]);
-  }
-
-  if (verb === "id") {
-    return result([
-      {
-        type: "output",
-        text: "uid=1000(denvit) gid=1000(denvit) groups=1000(denvit),27(sudo),100(users)",
-      },
-    ]);
-  }
-
-  if (verb === "uname") {
-    const invalidFlag = args.find((arg) => arg.startsWith("-") && arg !== "-a");
-
-    if (invalidFlag) {
-      return result([
-        { type: "error", text: `uname: invalid option -- '${invalidFlag}'` },
-        { type: "output", text: "Try: uname or uname -a" },
-      ]);
-    }
-
-    return result([
-      {
-        type: "output",
-        text: args.includes("-a")
-          ? "Linux denvit-web 6.8.0-browser-sandbox #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux"
-          : "Linux",
-      },
-    ]);
-  }
-
-  if (verb === "date") {
-    return result([{ type: "output", text: formatDeviceDate(new Date()) }]);
-  }
-
-  if (verb === "pwd") {
-    return result([{ type: "output", text: getCwdPath(currentDir) }]);
-  }
-
-  if (verb === "cd") {
-    const target = args[0] || "~";
-    const newDir = resolveDirectory(target, currentDir);
-
-    if (!newDir) {
-      return result([
-        {
-          type: "error",
-          text: `cd: ${target}: No such file or directory`,
-        },
-      ]);
-    }
-
-    return result([], "", newDir);
-  }
-
-  if (verb === "env" || verb === "printenv") {
-    const lines = envLines.map((line) =>
-      line.startsWith("PWD=") ? `PWD=${getCwdPath(currentDir)}` : line
-    );
-    return result(lines.map((text) => ({ type: "output", text })));
-  }
-
-  if (verb === "echo") {
-    return result([{ type: "output", text: args.join(" ") }]);
-  }
-
-  if (verb === "ls") {
-    return listDirectory(args, currentDir);
-  }
-
-  if (verb === "cat") {
-    return readLocalFile(args);
-  }
-
-  if (verb === "readme" || verb === "cat/readme") {
-    return result(readmeLines.map((text) => ({ type: "output", text })));
-  }
-
-  if (verb === "open") {
-    return openKnownTarget(args);
-  }
-
-  if (verb === "blog") {
-    return openKnownTarget(["blog"]);
-  }
-
-  if (verb === "history") {
-    return commandHistoryOutput(history);
-  }
-
-  return result([
-    {
-      type: "error",
-      text: `${verb}: command not found in this local sandbox`,
-    },
-    { type: "output", text: "Type help for supported commands." },
-  ]);
-}
-
-function isDirectory(entry) {
-  return entry.mode.startsWith("d");
-}
-
-function isSymlink(entry) {
-  return entry.mode.startsWith("l");
-}
-
-function formatEntryName(entry) {
-  const name = entry.shortName || entry.name.split(" -> ")[0];
-
-  if (isDirectory(entry) && name !== "." && name !== "..") {
-    return `${name}/`;
-  }
-
-  if (isSymlink(entry)) {
-    return `${name}@`;
-  }
-
-  return name;
-}
-
-function entryNameClass(entry) {
-  if (isDirectory(entry) && entry.shortName !== "." && entry.shortName !== "..") {
-    return "term-name-dir";
-  }
-  if (isSymlink(entry)) {
-    return "term-name-link-symlink";
-  }
-  return "term-name";
 }
 
 export default function TerminalHome() {
+  const [theme, setTheme] = useState(loadTheme);
   const [visibleCount, setVisibleCount] = useState(
     prefersReducedMotion ? bootLines.length : 0
   );
@@ -762,14 +205,29 @@ export default function TerminalHome() {
   const [isReady, setIsReady] = useState(prefersReducedMotion);
   const [inputValue, setInputValue] = useState("");
   const [sessions, setSessions] = useState([]);
-  const [commandHistory, setCommandHistory] = useState([]);
+  const [commandHistory, setCommandHistory] = useState(loadHistory);
   const [historyIndex, setHistoryIndex] = useState(null);
   const [currentDir, setCurrentDir] = useState("home");
   const [autoCommand, setAutoCommand] = useState(null);
+  const [completions, setCompletions] = useState([]);
+  const [completionIndex, setCompletionIndex] = useState(-1);
+  const [matrixActive, setMatrixActive] = useState(false);
+  const [statusTime, setStatusTime] = useState(formatDeviceDate(new Date()));
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const timeoutsRef = useRef([]);
   const sessionIdRef = useRef(0);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const vars = themes[theme];
+    for (const [key, value] of Object.entries(vars)) {
+      if (key !== "name" && key !== "label") {
+        root.style.setProperty(key, value);
+      }
+    }
+    saveTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
@@ -802,11 +260,12 @@ export default function TerminalHome() {
         } else if (
           line.type === "output" ||
           line.type === "motd" ||
+          line.type === "kernel" ||
           line.type === "ls" ||
           line.type === "names"
         ) {
           setVisibleCount((c) => c + 1);
-          await delay(300);
+          await delay(220);
         }
       }
 
@@ -863,6 +322,17 @@ export default function TerminalHome() {
     };
   }, [autoCommand, isReady]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStatusTime(formatDeviceDate(new Date()));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    saveHistory(commandHistory);
+  }, [commandHistory]);
+
   const focusInput = () => {
     if (isReady && inputRef.current) {
       inputRef.current.focus();
@@ -870,10 +340,28 @@ export default function TerminalHome() {
   };
 
   const handleShellClick = (event) => {
-    if (event.target instanceof Element && event.target.closest("a, input, button")) {
+    if (
+      event.target instanceof Element &&
+      event.target.closest("a, input, button, .term-titlebar")
+    ) {
       return;
     }
+    focusInput();
+  };
 
+  const applyCompletion = (completion) => {
+    const trimmed = inputValue.trimStart();
+    const parts = trimmed.split(/\s+/);
+
+    if (parts.length <= 1) {
+      setInputValue(completion + " ");
+    } else {
+      parts[parts.length - 1] = completion;
+      setInputValue(parts.join(" ") + " ");
+    }
+
+    setCompletions([]);
+    setCompletionIndex(-1);
     focusInput();
   };
 
@@ -885,6 +373,8 @@ export default function TerminalHome() {
 
     setInputValue("");
     setHistoryIndex(null);
+    setCompletions([]);
+    setCompletionIndex(-1);
     setCommandHistory(nextHistory);
 
     if (normalized.toLowerCase() === "clear") {
@@ -892,14 +382,31 @@ export default function TerminalHome() {
       return;
     }
 
-    const { output, openHref, newDir } = runCommand(
-      normalized,
-      nextHistory,
-      currentDir
-    );
+    const { output, openHref, newDir, theme: newTheme, matrix, reboot, shutdown } =
+      runCommand(normalized, {
+        history: nextHistory,
+        currentDir,
+        theme,
+        bootTime: window?.__DENVIT_BOOT_TIME__ || Date.now(),
+      });
 
-    if (newDir) {
-      setCurrentDir(newDir);
+    if (newDir) setCurrentDir(newDir);
+    if (newTheme) setTheme(newTheme);
+    if (matrix) setMatrixActive((active) => !active);
+
+    if (reboot) {
+      setSessions([]);
+      setVisibleCount(prefersReducedMotion ? bootLines.length : 0);
+      setIsReady(prefersReducedMotion);
+      setCurrentDir("home");
+      if (!prefersReducedMotion) {
+        setTimeout(() => window.location.reload(), 800);
+      }
+      return;
+    }
+
+    if (shutdown) {
+      setMatrixActive(false);
     }
 
     setSessions((current) => [
@@ -918,6 +425,10 @@ export default function TerminalHome() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (completions.length > 0 && completionIndex >= 0) {
+      applyCompletion(completions[completionIndex]);
+      return;
+    }
     submitCommand(inputValue);
   };
 
@@ -933,6 +444,8 @@ export default function TerminalHome() {
 
       setHistoryIndex(nextIndex);
       setInputValue(commandHistory[nextIndex]);
+      setCompletions([]);
+      return;
     }
 
     if (event.key === "ArrowDown") {
@@ -940,7 +453,6 @@ export default function TerminalHome() {
       if (commandHistory.length === 0 || historyIndex === null) return;
 
       const nextIndex = historyIndex + 1;
-
       if (nextIndex >= commandHistory.length) {
         setHistoryIndex(null);
         setInputValue("");
@@ -948,6 +460,54 @@ export default function TerminalHome() {
         setHistoryIndex(nextIndex);
         setInputValue(commandHistory[nextIndex]);
       }
+      setCompletions([]);
+      return;
+    }
+
+    if (event.key === "Tab") {
+      event.preventDefault();
+
+      if (completions.length > 1) {
+        const nextIndex = (completionIndex + 1) % completions.length;
+        setCompletionIndex(nextIndex);
+        const completion = completions[nextIndex];
+        const trimmed = inputValue.trimStart();
+        const parts = trimmed.split(/\s+/);
+        if (parts.length <= 1) {
+          setInputValue(completion + " ");
+        } else {
+          parts[parts.length - 1] = completion;
+          setInputValue(parts.join(" ") + " ");
+        }
+        return;
+      }
+
+      const trimmed = inputValue.trimStart();
+      const candidates = getCompletions(trimmed, currentDir);
+
+      if (candidates.length === 0) return;
+
+      if (candidates.length === 1) {
+        applyCompletion(candidates[0]);
+        return;
+      }
+
+      setCompletions(candidates);
+      setCompletionIndex(0);
+      const first = candidates[0];
+      const parts = trimmed.split(/\s+/);
+      if (parts.length <= 1) {
+        setInputValue(first + " ");
+      } else {
+        parts[parts.length - 1] = first;
+        setInputValue(parts.join(" ") + " ");
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setCompletions([]);
+      setCompletionIndex(-1);
     }
   };
 
@@ -976,7 +536,7 @@ export default function TerminalHome() {
 
   const renderCommandLine = (command, key, isTyping = false) => (
     <div key={key} className="term-line term-command">
-      {renderPrompt()}{" "}
+      {renderPrompt()} {" "}
       <span className="term-command-text">{command}</span>
       {isTyping && renderCursor()}
     </div>
@@ -1077,14 +637,19 @@ export default function TerminalHome() {
           );
         }
 
-        // Plain files: click to auto-type `cat <name>`.
         if (shortName && shortName !== "." && shortName !== "..") {
           return (
             <button
               key={item.name}
               type="button"
               className={`${entryNameClass(item)} term-name-file`}
-              onClick={() => setAutoCommand(`cat ${shortName}`)}
+              onClick={() => {
+                if (isReadmePath(shortName)) {
+                  setAutoCommand(`cat ${shortName}`);
+                } else {
+                  setAutoCommand(`cat ${shortName}`);
+                }
+              }}
               aria-label={`Cat ${shortName}`}
             >
               {name}
@@ -1133,6 +698,14 @@ export default function TerminalHome() {
       );
     }
 
+    if (line.type === "kernel") {
+      return (
+        <div key={key} className="term-line term-kernel">
+          {line.text}
+        </div>
+      );
+    }
+
     if (line.type === "error") {
       return (
         <div key={key} className="term-line term-error">
@@ -1146,9 +719,7 @@ export default function TerminalHome() {
         <div key={key} className="term-line term-link-line">
           <a
             href={line.href}
-            className={
-              line.primary ? "term-link term-link-primary" : "term-link"
-            }
+            className={line.primary ? "term-link term-link-primary" : "term-link"}
             aria-label={line.label}
             target="_blank"
             rel="noopener noreferrer"
@@ -1190,69 +761,142 @@ export default function TerminalHome() {
     return renderOutput(line, key);
   };
 
+  const title = `${USER}@${HOSTNAME}: ${
+    currentDir === "home" ? "~" : currentDir === "etc" ? "/etc" : `~/${currentDir}`
+  }`;
+
   return (
     <main
       className="term-shell"
+      data-theme={theme}
       aria-label="Interactive terminal sandbox"
       onClick={handleShellClick}
     >
+      <MatrixRain active={matrixActive} theme={theme} />
+
       <div className="term-crt" aria-hidden="true" />
       <div className="term-scanlines" aria-hidden="true" />
-      <div className="term-screen" ref={containerRef}>
-        <div className="term-content">
-          {bootLines.map((line, i) => renderBootLine(line, i))}
 
-          <div
-            className="term-history"
-            role="log"
-            aria-live="polite"
-            aria-relevant="additions text"
-          >
-            {sessions.map((session) => (
-              <div className="term-session" key={session.id}>
-                {renderCommandLine(
-                  session.command,
-                  `session-${session.id}-command`
-                )}
-                {session.output.map((line, index) =>
-                  renderOutput(line, `session-${session.id}-output-${index}`)
-                )}
-              </div>
-            ))}
-          </div>
-
-          {isReady && (
-            <form
-              className="term-input-form"
-              onSubmit={handleSubmit}
-              onClick={focusInput}
-              onPointerDown={focusInput}
+      <div className="term-window" onClick={(e) => e.stopPropagation()}>
+        <div className="term-titlebar">
+          <div className="term-traffic-lights">
+            <button
+              type="button"
+              className="term-light term-light-close"
+              aria-label="Close"
+              onClick={() => setSessions([])}
             >
-              <label className="term-sr-only" htmlFor="terminal-command">
-                Terminal command
-              </label>
-              <label
-                className="term-prompt term-input-prompt"
-                htmlFor="terminal-command"
-                aria-label="Focus terminal input"
+              <X size={10} strokeWidth={3} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="term-light term-light-minimize"
+              aria-label="Minimize"
+              onClick={() => setMatrixActive(false)}
+            >
+              <Minus size={10} strokeWidth={3} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="term-light term-light-maximize"
+              aria-label="Maximize"
+              onClick={() => focusInput()}
+            >
+              <Maximize2 size={10} strokeWidth={3} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="term-title">{title}</div>
+          <div className="term-title-spacer" />
+        </div>
+
+        <div className="term-screen" ref={containerRef}>
+          <div className="term-content">
+            {bootLines.map((line, i) => renderBootLine(line, i))}
+
+            <div
+              className="term-history"
+              role="log"
+              aria-live="polite"
+              aria-relevant="additions text"
+            >
+              {sessions.map((session) => (
+                <div className="term-session" key={session.id}>
+                  {renderCommandLine(
+                    session.command,
+                    `session-${session.id}-command`
+                  )}
+                  {session.output.map((line, index) =>
+                    renderOutput(line, `session-${session.id}-output-${index}`)
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {isReady && (
+              <form
+                className="term-input-form"
+                onSubmit={handleSubmit}
+                onClick={focusInput}
+                onPointerDown={focusInput}
               >
-                {renderPrompt()}
-              </label>
-              <input
-                id="terminal-command"
-                ref={inputRef}
-                className="term-input"
-                value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
-                onKeyDown={handleInputKeyDown}
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                inputMode="text"
-              />
-            </form>
-          )}
+                <label className="term-sr-only" htmlFor="terminal-command">
+                  Terminal command
+                </label>
+                <label
+                  className="term-prompt term-input-prompt"
+                  htmlFor="terminal-command"
+                  aria-label="Focus terminal input"
+                >
+                  {renderPrompt()}
+                </label>
+                <input
+                  id="terminal-command"
+                  ref={inputRef}
+                  className="term-input"
+                  value={inputValue}
+                  onChange={(event) => {
+                    setInputValue(event.target.value);
+                    setCompletions([]);
+                    setCompletionIndex(-1);
+                  }}
+                  onKeyDown={handleInputKeyDown}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="text"
+                />
+              </form>
+            )}
+
+            {completions.length > 1 && (
+              <div className="term-completions" role="listbox">
+                {completions.map((item, index) => (
+                  <button
+                    key={item}
+                    type="button"
+                    role="option"
+                    aria-selected={index === completionIndex}
+                    className={
+                      index === completionIndex
+                        ? "term-completion term-completion-active"
+                        : "term-completion"
+                    }
+                    onClick={() => applyCompletion(item)}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="term-statusbar">
+          <span className="term-status-user">{USER}@{HOSTNAME}</span>
+          <span className="term-status-dir">{getCwdPath(currentDir)}</span>
+          <span className="term-status-theme">{themes[theme].label}</span>
+          <span className="term-status-time">{statusTime}</span>
         </div>
       </div>
     </main>
