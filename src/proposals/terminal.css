@@ -286,6 +286,70 @@
   outline: none;
 }
 
+/* Clickable plain-file entries — auto-type `cat <name>`. */
+.term-name-file {
+  color: var(--term-fg);
+  font: inherit;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.term-name-file:hover,
+.term-name-file:focus-visible {
+  color: var(--term-yellow);
+  text-decoration-color: var(--term-yellow);
+}
+
+.term-name-file:focus-visible {
+  box-shadow: 0 0 0 2px var(--term-bg), 0 0 0 4px var(--term-yellow);
+  border-radius: 2px;
+  outline: none;
+}
+
+/* `ls -l` view: clickable plain-file name cell. Inherits the same look
+   as a regular file entry but lives inside a row layout. */
+.term-ls-file {
+  color: var(--term-fg);
+  font: inherit;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.term-ls-file:hover,
+.term-ls-file:focus-visible {
+  color: var(--term-yellow);
+  text-decoration-color: var(--term-yellow);
+}
+
+.term-ls-file:focus-visible {
+  box-shadow: 0 0 0 2px var(--term-bg), 0 0 0 4px var(--term-yellow);
+  border-radius: 2px;
+  outline: none;
+}
+
 .term-name-link-symlink {
   color: var(--term-purple);
 }
@@ -345,7 +409,8 @@
   background: transparent;
   color: var(--term-yellow);
   caret-color: var(--term-cursor);
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
   line-height: inherit;
   letter-spacing: 0;
   min-height: 1.55em;
@@ -456,7 +521,11 @@
   }
 
   .term-input {
-    font-size: 16px;
+    /* Keep matching the surrounding shell font-size so typed characters
+       don't jump in size during the auto-typing animation. iOS Safari
+       may briefly zoom the viewport on focus; that trade-off is worth
+       it for visual consistency. */
+    font-size: inherit;
     line-height: 1.45;
   }
 }
