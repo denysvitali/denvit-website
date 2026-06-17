@@ -949,6 +949,12 @@ export default function TerminalHome() {
         <div className="term-line term-output">total {line.total}</div>
       )}
       {line.rows.map((row) => {
+        const fileName = row.shortName || row.name;
+        const onFileClick =
+          !row.href && fileName
+            ? () => setAutoCommand(`cat ${fileName}`)
+            : undefined;
+
         const content = (
           <>
             <span className="term-perms">{row.mode}</span>
@@ -957,7 +963,18 @@ export default function TerminalHome() {
             <span className="term-group">{row.group}</span>
             <span className="term-size">{row.size}</span>
             <span className="term-date">{row.date}</span>
-            <span className={entryNameClass(row)}>{row.name}</span>
+            {onFileClick ? (
+              <button
+                type="button"
+                className={`${entryNameClass(row)} term-ls-file`}
+                onClick={onFileClick}
+                aria-label={`Cat ${fileName}`}
+              >
+                {row.name}
+              </button>
+            ) : (
+              <span className={entryNameClass(row)}>{row.name}</span>
+            )}
             {row.href && <ExternalLink size={14} aria-hidden="true" />}
           </>
         );
@@ -990,6 +1007,7 @@ export default function TerminalHome() {
     <div key={key} className="term-name-list">
       {line.items.map((item) => {
         const name = formatEntryName(item);
+        const shortName = item.shortName || item.name.split(" -> ")[0];
 
         if (item.href) {
           return (
@@ -1014,6 +1032,21 @@ export default function TerminalHome() {
               className={entryNameClass(item)}
               onClick={() => setAutoCommand(`ls ${item.shortName}`)}
               aria-label={`List ${item.shortName} directory`}
+            >
+              {name}
+            </button>
+          );
+        }
+
+        // Plain files: click to auto-type `cat <name>`.
+        if (shortName && shortName !== "." && shortName !== "..") {
+          return (
+            <button
+              key={item.name}
+              type="button"
+              className={`${entryNameClass(item)} term-name-file`}
+              onClick={() => setAutoCommand(`cat ${shortName}`)}
+              aria-label={`Cat ${shortName}`}
             >
               {name}
             </button>
