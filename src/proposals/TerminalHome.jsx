@@ -10,7 +10,6 @@ import {
 import {
   directories,
   entryNameClass,
-  fileContents,
   findDirectoryEntry,
   formatEntryName,
   isDirectory,
@@ -19,7 +18,7 @@ import {
   motdLines,
 } from "./terminal/fs.js";
 import { getCompletions, runCommand } from "./terminal/commands.js";
-import { formatDeviceDate, getPrompt } from "./terminal/utils.js";
+import { formatDeviceDate, getCwdPath, getPrompt } from "./terminal/utils.js";
 import "./terminal.css";
 
 const HISTORY_KEY = "denvit-terminal-history";
