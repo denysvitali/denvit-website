@@ -65,13 +65,47 @@ const openTargets = [
 ];
 
 const readmeLines = [
-  "Denys Vitali",
-  "Software systems, reverse engineering, Go, Kubernetes, security, automation.",
+  [
+    { text: "Denys Vitali", className: "term-r-bold term-r-blue" },
+  ],
+  [
+    {
+      text: "Software systems, reverse engineering, Go, Kubernetes, security, automation.",
+      className: "term-r-fg",
+    },
+  ],
   "",
-  `Primary link: ${BLOG_URL}`,
-  "Social links live in ~/social. Try: ls -la ~/social",
+  [
+    { text: "Primary link: ", className: "term-r-bold term-r-green" },
+    { text: BLOG_URL, className: "term-r-blue term-r-underline" },
+  ],
+  [
+    { text: "Social links live in ", className: "term-r-fg" },
+    { text: "~/social", className: "term-r-blue" },
+    { text: ". Try: ", className: "term-r-fg" },
+    { text: "ls -la ~/social", className: "term-r-yellow term-r-bold" },
+  ],
   "",
-  "This terminal is a local browser sandbox. A real Linux/WASM lab could fit here later.",
+  [
+    {
+      text: "This terminal is a local browser sandbox. ",
+      className: "term-r-fg",
+    },
+    {
+      text: "A real Linux/WASM lab could fit here later.",
+      className: "term-r-muted term-r-italic",
+    },
+  ],
+  "",
+  [
+    { text: "▸ ", className: "term-r-green term-r-bold" },
+    { text: "Try: ", className: "term-r-fg" },
+    { text: "help", className: "term-r-yellow term-r-bold" },
+    { text: "  ", className: "term-r-fg" },
+    { text: "open blog", className: "term-r-yellow term-r-bold" },
+    { text: "  ", className: "term-r-fg" },
+    { text: "open x", className: "term-r-yellow term-r-bold" },
+  ],
 ];
 
 const motdLines = [
@@ -428,7 +462,12 @@ function readReadme(args) {
     ]);
   }
 
-  return result(readmeLines.map((text) => ({ type: "output", text })));
+  return result(readmeLines.map((line) => {
+    if (typeof line === "string") {
+      return { type: "output", text: line };
+    }
+    return { type: "output", segments: line };
+  }));
 }
 
 function readLocalFile(args) {
@@ -1064,6 +1103,21 @@ export default function TerminalHome() {
 
   const renderOutput = (line, key) => {
     if (line.type === "output") {
+      if (Array.isArray(line.segments)) {
+        return (
+          <div key={key} className="term-line term-output">
+            {line.segments.map((segment, index) =>
+              segment.className ? (
+                <span key={index} className={segment.className}>
+                  {segment.text}
+                </span>
+              ) : (
+                <span key={index}>{segment.text}</span>
+              )
+            )}
+          </div>
+        );
+      }
       return (
         <div key={key} className="term-line term-output">
           {line.text}

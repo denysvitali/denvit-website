@@ -111,6 +111,44 @@
   overflow-wrap: anywhere;
 }
 
+/* Inline-style segments rendered inside .term-output (used by `cat README.md`
+   and friends so plain text files can carry color + bold). */
+.term-r-bold {
+  font-weight: 700;
+}
+.term-r-italic {
+  font-style: italic;
+}
+.term-r-underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.term-r-fg {
+  color: var(--term-fg);
+}
+.term-r-muted {
+  color: var(--term-muted);
+}
+.term-r-blue {
+  color: var(--term-blue);
+}
+.term-r-green {
+  color: var(--term-green);
+}
+.term-r-yellow {
+  color: var(--term-yellow);
+}
+.term-r-purple {
+  color: var(--term-purple);
+}
+.term-r-red {
+  color: var(--term-red);
+}
+.term-r-orange {
+  color: var(--term-orange);
+}
+
 .term-error {
   color: var(--term-red);
   white-space: pre-wrap;
