@@ -241,8 +241,11 @@ const result = (output, openHref = "", newDir = "") => ({
 function resolveDirectory(path = "", currentDir = "home") {
   const normalized = normalizeLookup(path || ".");
 
+  if (normalized === ".") {
+    return currentDir;
+  }
+
   if (
-    normalized === "." ||
     normalized === "~" ||
     normalized === CWD.toLowerCase()
   ) {
@@ -1013,8 +1016,8 @@ export default function TerminalHome() {
               key={item.name}
               type="button"
               className={entryNameClass(item)}
-              onClick={() => setAutoCommand(`cd ${item.shortName}`)}
-              aria-label={`Open ${item.shortName} directory`}
+              onClick={() => setAutoCommand(`ls ${item.shortName}`)}
+              aria-label={`List ${item.shortName} directory`}
             >
               {name}
             </button>
