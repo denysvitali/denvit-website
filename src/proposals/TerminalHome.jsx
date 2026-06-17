@@ -47,10 +47,10 @@ const socialLinks = [
     aliases: ["ig"],
   },
   {
-    command: "twitter",
-    label: "Twitter",
-    href: "https://twitter.com/DenysVitali",
-    aliases: ["x"],
+    command: "x",
+    label: "X",
+    href: "https://x.com/DenysVitali",
+    aliases: ["twitter", "tw"],
   },
 ];
 
@@ -503,7 +503,7 @@ function openKnownTarget(args) {
       },
       {
         type: "output",
-        text: "Supported targets: blog, github, linkedin, telegram, instagram, twitter",
+        text: "Supported targets: blog, github, linkedin, telegram, instagram, x",
       },
     ]);
   }

@@ -46,9 +46,9 @@ const socialLinks = [
     icon: Camera,
   },
   {
-    title: "Twitter",
-    href: "https://twitter.com/DenysVitali",
-    label: "twitter.com/DenysVitali",
+    title: "X",
+    href: "https://x.com/DenysVitali",
+    label: "x.com/DenysVitali",
     icon: MessageCircle,
   },
 ];
